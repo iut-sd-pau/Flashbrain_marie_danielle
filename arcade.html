@@ -1,0 +1,228 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script><script src="words.js"></script>
+<style>
+body{padding-bottom:80px;}
+.ah{width:100%;padding:22px 20px 6px;text-align:center;}
+.aht{font-family:var(--ac);font-size:1.5rem;font-weight:900;color:var(--c);text-shadow:0 0 20px var(--cg);}
+.ahs{font-size:.78rem;color:var(--txd);margin-top:4px;}
+.coinsbar{display:flex;align-items:center;justify-content:center;gap:8px;margin:10px 0;}
+.shopttl{width:100%;max-width:440px;font-size:.67rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txd);margin:14px 0 4px;}
+.center{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in"><div class="page-inner"><div class="center">
+  <div class="ah"><div class="aht" id="aht"></div><div class="ahs" id="ahs"></div>
+    <div class="coinsbar"><span style="font-size:.72rem;color:var(--txd)" id="coinlbl"></span> <span class="coin-chip"><span id="coinv">0</span> 🪙</span> <span class="gem-chip"><span id="gemv">0</span> 💎</span> <span data-bell></span></div>
+  </div>
+  <!-- HUB -->
+  <div id="hub" class="center">
+    <div class="arcgrid">
+      <div class="arccard" onclick="play('tap')"><div class="arci">⚡</div><div style="flex:1"><div class="arcn" id="n-tap"></div><div class="arcd" id="d-tap"></div></div><div class="arcbest" id="b-tap"></div></div>
+      <div class="arccard" onclick="play('mem')"><div class="arci">🧠</div><div style="flex:1"><div class="arcn" id="n-mem"></div><div class="arcd" id="d-mem"></div></div><div class="arcbest" id="b-mem"></div></div>
+      <div class="arccard" onclick="play('anag')"><div class="arci">🔤</div><div style="flex:1"><div class="arcn" id="n-anag"></div><div class="arcd" id="d-anag"></div></div><div class="arcbest" id="b-anag"></div></div>
+      <div class="arccard" onclick="play('react')"><div class="arci">🎯</div><div style="flex:1"><div class="arcn" id="n-react"></div><div class="arcd" id="d-react"></div></div><div class="arcbest" id="b-react"></div></div>
+      <div class="arccard" onclick="play('math')"><div class="arci">➕</div><div style="flex:1"><div class="arcn" id="n-math"></div><div class="arcd" id="d-math"></div></div><div class="arcbest" id="b-math"></div></div>
+      <div class="arccard" onclick="play('duel')"><div class="arci">⚔️</div><div style="flex:1"><div class="arcn" id="n-duel"></div><div class="arcd" id="d-duel"></div></div><div class="arcbest"></div></div>
+    </div>
+    <div class="shopttl" id="shopttl"></div>
+    <div class="arcgrid" id="shop"></div>
+  </div>
+  <!-- GAME STAGE -->
+  <div id="stage" class="arcstage hidden"></div>
+</div></div></div>
+<nav class="nav-bar">
+  <a class="nav-item" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item active" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+const lang=getLang();
+const SHOP=[{k:'skip',cost:30},{k:'time',cost:20},{k:'hint',cost:15}];
+window.addEventListener('load',()=>{
+  Audio.init();Audio.playArcade();
+  document.getElementById('aht').textContent=t('arc_title');
+  document.getElementById('ahs').textContent=t('arc_sub');
+  document.getElementById('coinlbl').textContent=t('arc_coins');
+  document.getElementById('n-tap').textContent=t('arc_tap_n');document.getElementById('d-tap').textContent=t('arc_tap_d');
+  document.getElementById('n-mem').textContent=t('arc_mem_n');document.getElementById('d-mem').textContent=t('arc_mem_d');
+  document.getElementById('n-anag').textContent=t('arc_anag_n');document.getElementById('d-anag').textContent=t('arc_anag_d');
+  document.getElementById('n-react').textContent=t('arc_react_n');document.getElementById('d-react').textContent=t('arc_react_d');
+  document.getElementById('n-math').textContent=t('arc_math_n');document.getElementById('d-math').textContent=t('arc_math_d');
+  document.getElementById('n-duel').textContent=t('arc_duel_n');document.getElementById('d-duel').textContent=t('arc_duel_d');
+  document.getElementById('shopttl').textContent=t('arc_shop_ttl');
+  setActiveNav('arcade');refresh();
+});
+function refresh(){
+  const p=loadProfile();document.getElementById('coinv').textContent=p.coins||0;
+  const gv=document.getElementById('gemv');if(gv)gv.textContent=p.gems||0;
+  const b=p.arcadeBest||{};
+  document.getElementById('b-tap').textContent=t('arc_best')+': '+(b.tap||0);
+  document.getElementById('b-mem').textContent=t('arc_best')+': '+(b.mem||0);
+  document.getElementById('b-anag').textContent=t('arc_best')+': '+(b.anag||0);
+  const br=document.getElementById('b-react');if(br)br.textContent=t('arc_best')+': '+(b.react||0);
+  const bm=document.getElementById('b-math');if(bm)bm.textContent=t('arc_best')+': '+(b.math||0);
+  const lbl={skip:t('arc_buy_skip'),time:t('arc_buy_time'),hint:t('arc_buy_hint')};
+  document.getElementById('shop').innerHTML=SHOP.map(s=>{
+    const can=(p.coins||0)>=s.cost;
+    return '<div class="shopcard"><div class="shopn">'+lbl[s.k]+' <span style="color:var(--go);font-size:.74rem">(x'+((p.jokers||{})[s.k]||0)+')</span></div><button class="shopbuy" '+(can?'':'disabled')+' onclick="buy(\''+s.k+'\','+s.cost+')">'+t('arc_buy',{C:s.cost})+'</button></div>';
+  }).join('');
+}
+function buy(k,cost){
+  if(!spendCoins(cost)){showToast(t('arc_poor'),'warn');return;}
+  const p=loadProfile();p.jokers=p.jokers||{};p.jokers[k]=(p.jokers[k]||0)+1;saveProfile(p);
+  SFX.coin();showToast(t('arc_bought'),'success');refresh();
+}
+function award(coins){addCoins(coins);const p=loadProfile();checkAchievements(p);}
+function setBest(game,score){const p=loadProfile();p.arcadeBest=p.arcadeBest||{};if(score>(p.arcadeBest[game]||0)){p.arcadeBest[game]=score;saveProfile(p);}}
+function backHub(){document.getElementById('stage').classList.add('hidden');document.getElementById('hub').classList.remove('hidden');document.getElementById('stage').innerHTML='';refresh();Audio.playArcade();}
+function endScreen(score,coins,game,replayFn){
+  setBest(game,score);award(coins);
+  const p=loadProfile();if(score>0){p.arcadeWins=(p.arcadeWins||0)+1;saveProfile(p);}
+  // chance de gagner une carte de collection
+  let cardHtml='';
+  const chance=0.20+(typeof deckLuck==='function'?deckLuck():0);
+  if(score>0&&Math.random()<chance){
+    const drawn=openPack(1)[0];const c=cardById(drawn.id);const col=RARITY[c.rarity].c;
+    cardHtml='<div class="packcard" style="border-top-color:'+col+';background:linear-gradient(180deg,'+col+'33,var(--bc));margin:6px auto"><div class="pe">'+c.emoji+'</div><div style="font-size:.7rem;font-weight:700">'+c.name+'</div><div style="font-size:.56rem;font-weight:800;color:'+col+'">'+RARITY[c.rarity].lbl+'</div>'+(drawn.isNew?'<div class="newtag">'+t('pack_new')+'</div>':'')+'</div><div style="color:var(--c);font-weight:700;font-size:.8rem">'+t('arc_card_won')+'</div>';
+  }
+  const s=document.getElementById('stage');
+  s.innerHTML='<div class="arcscore">'+score+'</div><div style="color:var(--go);font-weight:700">'+t('arc_coins_won',{C:coins})+' 🪙</div>'+cardHtml+
+    '<button class="btn-p" id="again">'+t('arc_again')+'</button><button class="btn-s" id="bk">'+t('arc_back')+'</button>';
+  document.getElementById('again').onclick=replayFn;document.getElementById('bk').onclick=backHub;
+  SFX.win();
+}
+function play(g){document.getElementById('hub').classList.add('hidden');document.getElementById('stage').classList.remove('hidden');
+  if(g==='tap')tap();else if(g==='mem')mem();else if(g==='anag')anag();else if(g==='react')react();else if(g==='math')mathgame();else if(g==='duel')duel();}
+
+/* ---------- FLASH TAP ---------- */
+function tap(){
+  const s=document.getElementById('stage');let score=0,tleft=20,cur=-1,iv,to;
+  s.innerHTML='<div style="display:flex;gap:20px"><div>'+t('arc_score')+' <b id="ts">0</b></div><div>'+t('arc_time')+' <b class="bigtimer" id="tt">20</b></div></div><div class="taparea" id="grid"></div><button class="btn-s" id="bk">'+t('arc_back')+'</button>';
+  document.getElementById('bk').onclick=()=>{clearInterval(iv);clearTimeout(to);backHub();};
+  const grid=document.getElementById('grid');const cells=[];
+  const N=3,gap=8;
+  function layout(){const w=grid.clientWidth;const cs=(w-gap*(N+1))/N;grid.innerHTML='';cells.length=0;for(let i=0;i<N*N;i++){const r=Math.floor(i/N),c=i%N;const el=document.createElement('div');el.className='tapcell';el.style.width=cs+'px';el.style.height=cs+'px';el.style.left=(gap+c*(cs+gap))+'px';el.style.top=(gap+r*(cs+gap))+'px';el.onclick=()=>hit(i);grid.appendChild(el);cells.push(el);}}
+  layout();
+  function lightNew(){if(cur>=0)cells[cur].classList.remove('on');cur=Math.floor(Math.random()*cells.length);cells[cur].classList.add('on');}
+  function hit(i){if(i===cur){score++;document.getElementById('ts').textContent=score;SFX.tick();cells[i].classList.remove('on');cur=-1;lightNew();}else{cells[i].classList.add('bad');SFX.wrong();setTimeout(()=>cells[i].classList.remove('bad'),150);}}
+  lightNew();
+  iv=setInterval(()=>{tleft--;document.getElementById('tt').textContent=tleft;if(tleft<=0){clearInterval(iv);finish();}},1000);
+  // re-light periodically to keep pace
+  to=setInterval(()=>{if(cur>=0)lightNew();},1400);
+  function finish(){clearInterval(iv);clearInterval(to);const coins=Math.floor(score/2);endScreen(score,coins,'tap',tap);}
+}
+
+/* ---------- FLASH MEMORY ---------- */
+function mem(){
+  const s=document.getElementById('stage');let seq=[],pos=0,level=0,accepting=false;
+  s.innerHTML='<div>'+t('arc_level')+' <b id="ml">1</b></div><div class="memgrid" id="mg"></div><div class="statusline" id="ms" style="min-height:22px"></div><button class="btn-s" id="bk">'+t('arc_back')+'</button>';
+  document.getElementById('bk').onclick=backHub;
+  const mg=document.getElementById('mg');const cells=[];
+  for(let i=0;i<4;i++){const el=document.createElement('div');el.className='memcell c'+i;el.onclick=()=>tapCell(i);mg.appendChild(el);cells.push(el);}
+  const tones=[330,440,550,660];
+  function lite(i,ms=420){cells[i].classList.add('lit');setTimeout(()=>cells[i].classList.remove('lit'),ms);}
+  function next(){level++;document.getElementById('ml').textContent=level;seq.push(Math.floor(Math.random()*4));document.getElementById('ms').textContent=t('arc_mem_watch');accepting=false;
+    let k=0;const iv=setInterval(()=>{lite(seq[k]);SFX.tick();k++;if(k>=seq.length){clearInterval(iv);setTimeout(()=>{document.getElementById('ms').textContent=t('arc_mem_repeat');accepting=true;pos=0;},500);}},650);}
+  function tapCell(i){if(!accepting)return;lite(i,180);if(i===seq[pos]){pos++;SFX.tick();if(pos>=seq.length){accepting=false;SFX.correct();setTimeout(next,700);}}else{accepting=false;SFX.wrong();finish();}}
+  function finish(){const score=Math.max(0,level-1);const coins=score*3;endScreen(score,coins,'mem',mem);}
+  setTimeout(next,400);
+}
+
+/* ---------- ANAGRAM ---------- */
+function anag(){
+  const s=document.getElementById('stage');let solved=0,tleft=45,iv,word='';
+  const pool=getGameWords(lang).filter(w=>w.length>=4&&w.length<=8);
+  s.innerHTML='<div style="display:flex;gap:20px"><div>'+t('arc_score')+' <b id="as">0</b></div><div>'+t('arc_time')+' <b class="bigtimer" id="at">45</b></div></div>'+
+    '<div class="anagword" id="aw"></div>'+
+    '<div class="aw" style="max-width:320px"><div class="arow"><input id="ainp" class="ai" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="'+t('arc_anag_ph')+'"><button class="bsub" id="aok">✓</button></div></div>'+
+    '<div style="display:flex;gap:10px"><button class="btn-s" style="width:auto;padding:10px 18px" id="askip">'+t('arc_anag_skip')+'</button><button class="btn-s" style="width:auto;padding:10px 18px" id="bk">'+t('arc_back')+'</button></div>';
+  document.getElementById('bk').onclick=()=>{clearInterval(iv);backHub();};
+  document.getElementById('askip').onclick=()=>newWord();
+  document.getElementById('aok').onclick=check;
+  const inp=document.getElementById('ainp');inp.addEventListener('keydown',e=>{if(e.key==='Enter')check();});
+  function scramble(w){const a=w.split('');for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}const r=a.join('');return r===w?scramble(w):r;}
+  function newWord(){word=pickRandom(pool);document.getElementById('aw').textContent=scramble(word).toUpperCase();inp.value='';inp.focus();}
+  function check(){const v=foldAccents((inp.value||'').toLowerCase().trim());if(v===foldAccents(word.toLowerCase())){solved++;document.getElementById('as').textContent=solved;SFX.correct();showToast(t('arc_anag_ok'),'success');newWord();}else{SFX.wrong();vibrate(40);}}
+  newWord();
+  iv=setInterval(()=>{tleft--;document.getElementById('at').textContent=tleft;if(tleft<=0){clearInterval(iv);endScreen(solved,solved*4,'anag',anag);}},1000);
+}
+
+/* ---------- REFLEXE ---------- */
+function react(){
+  const s=document.getElementById('stage');let round=0,score=0,startT=0,armed=false,to;
+  const ROUNDS=5;
+  s.innerHTML='<div>'+t('arc_score')+' <b id="rs">0</b> · <span id="rr">1/'+ROUNDS+'</span></div>'+
+    '<div id="rzone" style="width:100%;max-width:340px;height:220px;border-radius:var(--rlg);display:flex;align-items:center;justify-content:center;font-family:var(--ac);font-weight:900;font-size:1.2rem;color:#04040a;cursor:pointer;background:var(--er);transition:background .05s">'+t('arc_react_wait')+'</div>'+
+    '<button class="btn-s" id="bk">'+t('arc_back')+'</button>';
+  document.getElementById('bk').onclick=()=>{clearTimeout(to);backHub();};
+  const z=document.getElementById('rzone');
+  function arm(){
+    armed=false;z.style.background='var(--er)';z.textContent=t('arc_react_wait');
+    to=setTimeout(()=>{armed=true;startT=performance.now();z.style.background='var(--ok)';z.textContent=t('arc_react_now');},1200+Math.random()*2600);
+  }
+  z.onclick=()=>{
+    if(!armed){clearTimeout(to);z.style.background='var(--fl)';z.textContent=t('arc_react_early');SFX.wrong();round++;document.getElementById('rr').textContent=Math.min(round+1,ROUNDS)+'/'+ROUNDS;if(round>=ROUNDS)return done();setTimeout(arm,700);return;}
+    const ms=Math.round(performance.now()-startT);armed=false;SFX.correct();
+    const pts=Math.max(1,Math.round((600-Math.min(ms,600))/10));score+=pts;
+    document.getElementById('rs').textContent=score;z.style.background='var(--c)';z.textContent=t('arc_react_ms',{N:ms});
+    round++;document.getElementById('rr').textContent=Math.min(round+1,ROUNDS)+'/'+ROUNDS;
+    if(round>=ROUNDS)return done();setTimeout(arm,800);
+  };
+  function done(){endScreen(score,Math.floor(score/3),'react',react);}
+  arm();
+}
+
+/* ---------- CALCUL ECLAIR ---------- */
+function mathgame(){
+  const s=document.getElementById('stage');let score=0,tleft=30,iv,ans=0;
+  s.innerHTML='<div style="display:flex;gap:20px"><div>'+t('arc_score')+' <b id="ms">0</b></div><div>'+t('arc_time')+' <b class="bigtimer" id="mt">30</b></div></div>'+
+    '<div id="mq" style="font-family:var(--ac);font-size:2.4rem;font-weight:900;color:var(--c);margin:6px 0"></div>'+
+    '<div class="aw" style="max-width:300px"><div class="arow"><input id="minp" class="ai" type="text" inputmode="numeric" autocomplete="off" placeholder="?"><button class="bsub" id="mok">✓</button></div></div>'+
+    '<button class="btn-s" id="bk">'+t('arc_back')+'</button>';
+  document.getElementById('bk').onclick=()=>{clearInterval(iv);backHub();};
+  const inp=document.getElementById('minp');document.getElementById('mok').onclick=check;
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')check();});
+  function gen(){const ops=['+','-','×'];const op=ops[Math.floor(Math.random()*ops.length)];let a,b;
+    if(op==='×'){a=2+Math.floor(Math.random()*9);b=2+Math.floor(Math.random()*9);ans=a*b;}
+    else if(op==='-'){a=10+Math.floor(Math.random()*40);b=Math.floor(Math.random()*a);ans=a-b;}
+    else{a=5+Math.floor(Math.random()*45);b=5+Math.floor(Math.random()*45);ans=a+b;}
+    document.getElementById('mq').textContent=a+' '+op+' '+b;inp.value='';inp.focus();}
+  function check(){if(parseInt(inp.value,10)===ans){score++;document.getElementById('ms').textContent=score;SFX.correct();gen();}else{SFX.wrong();vibrate(40);inp.value='';}}
+  gen();
+  iv=setInterval(()=>{tleft--;document.getElementById('mt').textContent=tleft;if(tleft<=0){clearInterval(iv);endScreen(score,score*3,'math',mathgame);}},1000);
+}
+
+/* ---------- DUEL FLASH (2 joueurs, meme appareil) ---------- */
+function duel(){
+  const s=document.getElementById('stage');let armed=false,done=false,to;
+  s.innerHTML='<div style="text-align:center;font-size:.8rem;color:var(--txd)">'+t('arc_duel_p1')+' · '+t('arc_duel_p2')+'</div>'+
+    '<div style="display:flex;gap:10px;width:100%;max-width:360px;height:240px">'+
+    '<div id="z1" style="flex:1;border-radius:var(--rlg);background:var(--bc);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:2.4rem;cursor:pointer">⬅️</div>'+
+    '<div id="z2" style="flex:1;border-radius:var(--rlg);background:var(--bc);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:2.4rem;cursor:pointer">➡️</div></div>'+
+    '<div id="dstat" style="font-family:var(--ac);font-weight:900;font-size:1.1rem;min-height:26px">'+t('arc_duel_wait')+'</div>'+
+    '<button class="btn-s" id="bk">'+t('arc_back')+'</button>';
+  document.getElementById('bk').onclick=()=>{clearTimeout(to);backHub();};
+  const z1=document.getElementById('z1'),z2=document.getElementById('z2'),st=document.getElementById('dstat');
+  function go(){armed=true;st.textContent=t('arc_duel_go');z1.style.background='var(--ok)';z2.style.background='var(--ok)';}
+  function press(p){
+    if(done)return;
+    if(!armed){done=true;clearTimeout(to);st.textContent=t('arc_duel_win',{P:p===1?'J2':'J1'});SFX.wrong();return finish(p===1?2:1);}
+    done=true;st.textContent=t('arc_duel_win',{P:'J'+p});SFX.win();finish(p);
+  }
+  z1.onclick=()=>press(1);z2.onclick=()=>press(2);
+  to=setTimeout(go,1500+Math.random()*3000);
+  function finish(winner){
+    setTimeout(()=>{
+      addCoins(8);const p=loadProfile();p.arcadeWins=(p.arcadeWins||0)+1;saveProfile(p);
+      s.innerHTML='<div class="arcscore">🏆</div><div style="color:var(--go);font-weight:700">'+t('arc_duel_win',{P:'J'+winner})+' · +8 🪙</div>'+
+        '<button class="btn-p" id="again">'+t('arc_again')+'</button><button class="btn-s" id="bk2">'+t('arc_back')+'</button>';
+      document.getElementById('again').onclick=duel;document.getElementById('bk2').onclick=backHub;
+    },900);
+  }
+}
+</script></body></html>

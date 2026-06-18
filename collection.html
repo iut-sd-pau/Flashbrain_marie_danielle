@@ -1,0 +1,148 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:90px;}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 16px 30px;width:100%;}
+.tp{display:none;flex-direction:column;align-items:center;gap:12px;width:100%;}.tp.active{display:flex;}
+.bonusline{font-size:.74rem;color:var(--go);font-weight:600;}
+.tsel{width:100%;max-width:460px;padding:11px 14px;background:rgba(255,255,255,.06);border:1px solid var(--br);border-radius:var(--rmd);color:var(--tx);font-size:.9rem;}
+.lbl{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txd);align-self:flex-start;width:100%;max-width:460px;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in"><div class="page-inner">
+  <div class="headrow">
+    <button class="tback" onclick="goTo('menu.html')">←</button>
+    <span class="coin-chip"><span id="coinv">0</span> 🪙</span>
+    <span data-bell></span>
+  </div>
+  <div class="wrap">
+    <div style="text-align:center"><div class="ttl" id="ttl"></div><div class="psi" style="color:var(--txd);font-size:.76rem" id="sub"></div></div>
+    <div class="seg">
+      <button class="active" id="tb-book" onclick="sw('book',this)"></button>
+      <button id="tb-deck" onclick="sw('deck',this)"></button>
+      <button id="tb-trade" onclick="sw('trade',this)"></button>
+    </div>
+    <!-- BOOK -->
+    <div class="tp active" id="tp-book"><div class="cardgrid" id="grid"></div></div>
+    <!-- DECK -->
+    <div class="tp" id="tp-deck">
+      <div class="lbl" id="deckttl"></div>
+      <div class="deckbar" id="deckbar"></div>
+      <div class="bonusline" id="deckbonus"></div>
+      <div class="psi" style="font-size:.74rem;color:var(--txd)" id="deckhint"></div>
+      <div class="cardgrid" id="deckgrid"></div>
+    </div>
+    <!-- TRADE -->
+    <div class="tp" id="tp-trade"><div id="tradebox" style="width:100%;max-width:460px;display:flex;flex-direction:column;gap:12px;align-items:center"></div></div>
+  </div>
+</div></div>
+<nav class="nav-bar">
+  <a class="nav-item" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item active" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+let friends=[];
+window.addEventListener('load',()=>{
+  Audio.init();Audio.playArcade();
+  document.getElementById('ttl').textContent=t('col_title');
+  document.getElementById('tb-book').textContent=t('col_tab_book');
+  document.getElementById('tb-deck').textContent=t('col_tab_deck');
+  document.getElementById('tb-trade').textContent=t('col_tab_trade');
+  document.getElementById('deckttl').textContent=t('col_deck_ttl');
+  document.getElementById('deckhint').textContent=t('col_deck_hint');
+  refreshAll();setActiveNav('arcade');
+  if(typeof Social!=='undefined'&&Social.ok()){Social.listenFriends(f=>{friends=f;});}
+});
+function refreshAll(){const p=loadProfile();document.getElementById('coinv').textContent=p.coins||0;
+  document.getElementById('sub').textContent=t('col_sub',{N:collectionCount(p),T:CHARACTERS.length});
+  renderBook();renderDeck();}
+function bonusLabel(b){const v=b.type==='joker'?b.val:Math.round(b.val*100);return t('col_bonus_'+b.type,{V:v});}
+function rarColor(r){return RARITY[r].c;}
+function renderBook(){
+  const p=loadProfile();
+  document.getElementById('grid').innerHTML=CHARACTERS.map(c=>{
+    const cnt=(p.collection||{})[c.id]||0;const owned=cnt>0;const inDeck=(p.deck||[]).includes(c.id);
+    if(!owned)return '<div class="gcard locked" style="border-top-color:'+rarColor(c.rarity)+'"><div class="ce">❓</div><div class="cn">???</div><div class="cr" style="color:'+rarColor(c.rarity)+'">'+RARITY[c.rarity].lbl+'</div></div>';
+    return '<div class="gcard" style="border-top-color:'+rarColor(c.rarity)+';background:linear-gradient(180deg,'+rarColor(c.rarity)+'22,transparent)" onclick="toggleDeck(\''+c.id+'\')">'+
+      (cnt>1?'<div class="cdup">x'+cnt+'</div>':'')+(inDeck?'<div class="cdeck">⭐</div>':'')+
+      '<div class="ce">'+c.emoji+'</div><div class="cn">'+c.name+'</div>'+
+      '<div class="cr" style="color:'+rarColor(c.rarity)+'">'+RARITY[c.rarity].lbl+'</div>'+
+      '<div style="font-size:.56rem;color:var(--go)">'+bonusLabel(c.bonus)+'</div></div>';
+  }).join('');
+}
+function renderDeck(){
+  const p=loadProfile();const deck=p.deck||[];
+  document.getElementById('deckbar').innerHTML=[0,1,2].map(i=>{
+    const id=deck[i];
+    if(id){const c=cardById(id);return '<div class="deckslot filled" onclick="toggleDeck(\''+id+'\')"><div style="font-size:1.6rem">'+c.emoji+'</div><div class="dl">'+c.name+'</div></div>';}
+    return '<div class="deckslot">+<div class="dl">'+t('col_empty_slot')+'</div></div>';
+  }).join('');
+  // bonus total
+  const coin=Math.round(cardBonus(p,'coin')*100),xp=Math.round(cardBonus(p,'xp')*100),jk=deckJokerStart(p),lk=Math.round(deckLuck(p)*100);
+  const parts=[];if(coin)parts.push('+'+coin+'% 🪙');if(xp)parts.push('+'+xp+'% XP');if(jk)parts.push('+'+jk+' 🃏');if(lk)parts.push('+'+lk+'% ✨');
+  document.getElementById('deckbonus').textContent=parts.join('   ')||'—';
+  // owned cards grid
+  const owned=CHARACTERS.filter(c=>((p.collection||{})[c.id]||0)>0);
+  document.getElementById('deckgrid').innerHTML=owned.map(c=>{
+    const inDeck=deck.includes(c.id);
+    return '<div class="gcard" style="border-top-color:'+rarColor(c.rarity)+';background:linear-gradient(180deg,'+rarColor(c.rarity)+'22,transparent)" onclick="toggleDeck(\''+c.id+'\')">'+
+      (inDeck?'<div class="cdeck">⭐</div>':'')+'<div class="ce">'+c.emoji+'</div><div class="cn">'+c.name+'</div>'+
+      '<div style="font-size:.56rem;color:var(--go)">'+bonusLabel(c.bonus)+'</div>'+
+      '<div class="cr" style="color:'+(inDeck?'var(--ok)':'var(--txd)')+'">'+(inDeck?t('col_indeck'):t('col_equip'))+'</div></div>';
+  }).join('');
+}
+function toggleDeck(id){
+  const p=loadProfile();p.deck=p.deck||[];
+  if(p.deck.includes(id)){p.deck=p.deck.filter(x=>x!==id);SFX.select();}
+  else{ if(p.deck.length>=3){showToast(t('col_deckfull'),'warn');return;} p.deck.push(id);SFX.coin();
+    const c=cardById(id);showToast('⭐ '+c.name+' · '+bonusLabel(c.bonus),'success');}
+  saveProfile(p);renderBook();renderDeck();
+}
+function sw(id,btn){document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tp').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('tp-'+id).classList.add('active');SFX.select();if(id==='trade')renderTrade();}
+async function renderTrade(){
+  const box=document.getElementById('tradebox');const p=loadProfile();
+  if(typeof Social==='undefined'||!Social.ok()){box.innerHTML='<div class="psi" style="color:var(--txd);padding:14px;text-align:center">'+t('col_trade_need_fb')+'</div>';return;}
+  // incoming
+  const incoming=await Social.tradesOnce();
+  let h='';
+  if(incoming.length){
+    h+='<div class="lbl">'+t('col_trade_incoming')+'</div>';
+    h+=incoming.filter(tr=>tr.status==='pending').map(tr=>{
+      const gives=(tr.give||[]).map(id=>cardById(id)?.emoji+' '+cardById(id)?.name).join(', ')||'—';
+      const wants=(tr.want||[]).map(id=>cardById(id)?.emoji+' '+cardById(id)?.name).join(', ')||'—';
+      return '<div class="shoprow"><div class="si"><div class="sn">'+tr.fromPseudo+'</div><div class="sd">'+t('col_trade_gives')+': '+gives+'<br>'+t('col_trade_wants')+': '+wants+'</div></div>'+
+        '<div style="display:flex;flex-direction:column;gap:6px"><button class="miniyes" onclick="acceptTrade(\''+tr.key+'\')">'+t('col_trade_accept')+'</button><button class="minino" onclick="declineTrade(\''+tr.key+'\')">'+t('col_trade_decline')+'</button></div></div>';
+    }).join('')||'';
+  }
+  // propose form
+  const dups=CHARACTERS.filter(c=>((p.collection||{})[c.id]||0)>=2);
+  h+='<div class="lbl">'+t('col_trade_with')+'</div>';
+  if(!friends.length){h+='<div class="psi" style="color:var(--txd)">'+t('fr_none')+'</div>';}
+  else if(!dups.length){h+='<div class="psi" style="color:var(--txd)">'+t('col_no_dup')+'</div>';}
+  else{
+    h+='<select class="tsel" id="trFriend">'+friends.map(f=>'<option value="'+f.uid+'">'+f.pseudo+'</option>').join('')+'</select>';
+    h+='<div class="lbl">'+t('col_trade_pick_give')+'</div><select class="tsel" id="trGive">'+dups.map(c=>'<option value="'+c.id+'">'+c.emoji+' '+c.name+' (x'+(p.collection[c.id])+')</option>').join('')+'</select>';
+    h+='<div class="lbl">'+t('col_trade_pick_want')+'</div><select class="tsel" id="trWant"><option value="">—</option>'+CHARACTERS.map(c=>'<option value="'+c.id+'">'+c.emoji+' '+c.name+'</option>').join('')+'</select>';
+    h+='<button class="btn-p" style="margin-top:8px" onclick="sendTrade()">'+t('col_trade_send')+'</button>';
+  }
+  box.innerHTML=h;
+}
+async function sendTrade(){
+  const to=document.getElementById('trFriend').value, give=document.getElementById('trGive').value, want=document.getElementById('trWant').value;
+  const res=await Social.proposeTrade(to,[give],want?[want]:[]);
+  if(res.ok){SFX.coin();showToast(t('col_trade_sent'),'success');}else{showToast('⚠️','warn');}
+}
+async function acceptTrade(key){
+  const list=await Social.tradesOnce();const tr=list.find(x=>x.key===key);if(!tr)return;
+  const ok=await Social.acceptTrade(tr);
+  if(ok){SFX.win();showToast(t('col_trade_done'),'success');refreshAll();renderTrade();}
+  else showToast(t('col_trade_cant'),'warn');
+}
+async function declineTrade(key){const list=await Social.tradesOnce();const tr=list.find(x=>x.key===key);if(tr){await Social.declineTrade(tr);renderTrade();}}
+</script></body></html>

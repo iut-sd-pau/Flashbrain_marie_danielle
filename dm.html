@@ -1,0 +1,42 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:0;}
+.wrap{display:flex;flex-direction:column;align-items:center;padding:0 14px;width:100%;}
+.dmfoot{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:center;padding:10px 14px 18px;background:rgba(6,6,15,.96);border-top:1px solid var(--br);backdrop-filter:blur(20px);}
+.dmrow{display:flex;gap:8px;width:100%;max-width:460px;}
+.dmrow input{flex:1;padding:12px 14px;background:rgba(255,255,255,.06);border:1px solid var(--br);border-radius:var(--rmd);color:var(--tx);font-size:.92rem;}
+.dmrow input:focus{outline:none;border-color:var(--c);}
+.dmrow button{width:50px;background:var(--c);color:#04040a;border:none;border-radius:var(--rmd);font-size:1.2rem;cursor:pointer;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div></div>
+<div class="page fade-in"><div class="page-inner">
+  <div class="headrow"><button class="tback" onclick="goTo('world.html')">←</button><div class="ttl" id="ttl" style="font-size:1rem"></div><span style="width:38px"></span></div>
+  <div class="wrap"><div class="dmwrap"><div class="dmlog" id="log"></div></div></div>
+</div></div>
+<div class="dmfoot"><div class="dmrow"><input id="msg" maxlength="300" autocomplete="off"><button onclick="send()">➤</button></div></div>
+<script>
+const params=new URLSearchParams(location.search);const other=params.get('u');let myUidV;
+window.addEventListener('load',async()=>{
+  Audio.init();
+  document.getElementById('msg').placeholder=t('dm_ph');
+  myUidV=myUid();
+  if(typeof Social==='undefined'||!Social.ok()||!other){document.getElementById('log').innerHTML='<div class="psi" style="color:var(--txd);text-align:center;padding:30px">'+t('dm_need_fb')+'</div>';document.getElementById('ttl').textContent=t('dm_title');return;}
+  // titre = pseudo de l'ami
+  try{const u=(await _db.ref('users/'+other).once('value')).val();document.getElementById('ttl').textContent=u?.pseudo||t('dm_title');}catch{document.getElementById('ttl').textContent=t('dm_title');}
+  Social.listenDM(other,renderLog);
+  document.getElementById('msg').addEventListener('keydown',e=>{if(e.key==='Enter')send();});
+});
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function renderLog(msgs){
+  const el=document.getElementById('log');
+  if(!msgs.length){el.innerHTML='<div class="psi" style="color:var(--txd);text-align:center;padding:20px">'+t('dm_empty')+'</div>';return;}
+  el.innerHTML=msgs.map(m=>{const mine=m.from===myUidV;const d=new Date(m.ts);const hh=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);
+    return '<div class="dmsg '+(mine?'me':'them')+'">'+esc(m.msg)+'<div class="dmtime">'+hh+'</div></div>';}).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function send(){const i=document.getElementById('msg');const v=i.value.trim();if(!v||!other)return;Social.sendDM(other,v);i.value='';SFX.select();}
+</script></body></html>

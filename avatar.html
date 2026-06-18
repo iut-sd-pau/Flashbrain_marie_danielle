@@ -1,0 +1,106 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:90px;}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 16px 30px;width:100%;}
+.bal{display:flex;gap:8px;}
+.savebar{position:fixed;bottom:64px;left:0;right:0;display:flex;justify-content:center;padding:8px 16px;background:linear-gradient(transparent,var(--bg) 40%);z-index:40;}
+.savebar .btn-p{max-width:440px;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in"><div class="page-inner">
+  <div class="headrow">
+    <button class="tback" onclick="goTo('profile.html')">←</button>
+    <div class="bal"><span class="coin-chip"><span id="coinv">0</span> 🪙</span><span class="gem-chip"><span id="gemv">0</span> 💎</span></div>
+    <span data-bell></span>
+  </div>
+  <div class="wrap">
+    <div style="text-align:center"><div class="ttl" id="ttl"></div><div class="psi" style="color:var(--txd);font-size:.76rem" id="sub"></div></div>
+    <div class="avstage">
+      <div class="avbig" id="big"></div>
+      <div class="avtabs" id="tabs"></div>
+    </div>
+    <div class="avopts" id="opts"></div>
+  </div>
+</div></div>
+<div class="savebar"><button class="btn-p" id="saveBtn"></button></div>
+<nav class="nav-bar">
+  <a class="nav-item" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item active" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+const CATS=[
+  {k:'av_skin',  field:'skin',     arr:AV_SKINS,     kind:'part', swatch:true},
+  {k:'av_face',  field:'face',     arr:AV_FACES,     kind:'part'},
+  {k:'av_eyes',  field:'eyes',     arr:AV_EYES,      kind:'part'},
+  {k:'av_hair',  field:'hair',     arr:AV_HAIR,      kind:'part'},
+  {k:'av_haircolor',field:'hairColor',arr:AV_HAIRCOLORS,kind:'color'},
+  {k:'av_hat',   field:'hat',      arr:AV_HATS,      kind:'part'},
+  {k:'av_aura',  field:'aura',     arr:AV_AURAS,     kind:'part'},
+  {k:'av_outfit',field:'outfit',   arr:AV_OUTFITS,   kind:'color'},
+];
+let cur, activeTab=0;
+window.addEventListener('load',()=>{
+  Audio.init();Audio.playMenu();
+  const p=loadProfile();cur={...DEFAULT_AVATAR,...(p.avatar||{})};
+  document.getElementById('ttl').textContent=t('av_title');
+  document.getElementById('sub').textContent=t('av_sub');
+  document.getElementById('saveBtn').textContent=t('av_save');
+  document.getElementById('saveBtn').onclick=save;
+  renderTabs();renderBig();renderOpts();refreshBal();setActiveNav('profile');
+});
+function refreshBal(){const p=loadProfile();document.getElementById('coinv').textContent=p.coins||0;document.getElementById('gemv').textContent=p.gems||0;}
+function renderBig(){document.getElementById('big').innerHTML=renderAvatar(cur,150);}
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=CATS.map((c,i)=>'<div class="avtab '+(i===activeTab?'active':'')+'" onclick="setTab('+i+')">'+t(c.k)+'</div>').join('');
+}
+function setTab(i){activeTab=i;SFX.select();renderTabs();renderOpts();}
+function renderOpts(){
+  const p=loadProfile();const c=CATS[activeTab];
+  const el=document.getElementById('opts');
+  el.innerHTML=c.arr.map(opt=>{
+    if(c.kind==='color'){
+      const val=opt; const sel=cur[c.field]===val;
+      return '<div class="avopt '+(sel?'sel':'')+'" onclick="pickColor(\''+c.field+'\',\''+val+'\')"><div class="swatch" style="background:'+val+'"></div></div>';
+    }
+    const id=opt.id; const sel=cur[c.field]===id;
+    const owned=ownsItem(p,c.field,opt); const rankOk=itemUnlockedByRank(p,opt);
+    const preview={...cur,[c.field]:id};
+    let thumb;
+    if(c.field==='skin'&&c.swatch){thumb='<div class="swatch" style="background:'+opt.c+'"></div>';}
+    else {thumb=renderAvatar(preview,58);}
+    let price='';
+    if(opt.cost){
+      if(!owned){
+        const cls=opt.cur==='gem'?'avprice gem':'avprice';
+        price='<div class="'+cls+'">'+(rankOk?(opt.cost+(opt.cur==='gem'?' 💎':' 🪙')):('🔒 '+t('rank_'+opt.req)))+'</div>';
+      }
+    }
+    return '<div class="avopt '+(sel?'sel':'')+' '+((!owned&&!rankOk)?'locked':'')+'" onclick="pickPart('+activeTab+',\''+id+'\')">'+thumb+price+'</div>';
+  }).join('');
+}
+function pickColor(field,val){cur[field]=val;SFX.select();renderBig();renderOpts();}
+function pickPart(catIdx,id){
+  const c=CATS[catIdx];const p=loadProfile();const opt=c.arr.find(o=>o.id===id);
+  if(!opt)return;
+  if(ownsItem(p,c.field,opt)){cur[c.field]=id;SFX.select();renderBig();renderOpts();return;}
+  // achat
+  if(!itemUnlockedByRank(p,opt)){showToast('🔒 '+t('av_locked_rank')+' : '+t('rank_'+opt.req),'warn');return;}
+  const ok=opt.cur==='gem'?spendGems(opt.cost):spendCoins(opt.cost);
+  if(!ok){showToast(t('av_poor'),'warn');return;}
+  p2=loadProfile();p2.ownedItems=p2.ownedItems||[];p2.ownedItems.push(c.field+':'+id);saveProfile(p2);
+  cur[c.field]=id;SFX.coin();showToast(t('av_bought'),'success');renderBig();renderOpts();refreshBal();
+}
+function save(){
+  const p=loadProfile();p.avatar={...cur};saveProfile(p);
+  if(typeof Social!=='undefined')Social.publishMe&&Social.publishMe();
+  SFX.win();showToast(t('av_saved'),'success');
+  setTimeout(()=>goTo('profile.html'),700);
+}
+</script></body></html>

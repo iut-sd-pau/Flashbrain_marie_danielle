@@ -1,0 +1,96 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{overflow:hidden;}
+.dots{position:fixed;top:18px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:20;}
+.dot{width:32px;height:4px;border-radius:2px;background:var(--br);transition:background .3s;}
+.dot.active{background:var(--c);box-shadow:0 0 6px var(--c);}.dot.done{background:rgba(0,229,255,.3);}
+.sl{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 24px 60px;opacity:0;transform:translateY(20px);transition:opacity .4s,transform .4s;pointer-events:none;}
+.sl.active{opacity:1;transform:none;pointer-events:all;}.sl.exit{opacity:0;transform:translateY(-20px);pointer-events:none;}
+.si{font-size:5rem;margin-bottom:22px;animation:bn 2.2s ease-in-out infinite;}
+@keyframes bn{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.st{font-family:var(--ac);font-size:clamp(1.4rem,5vw,2rem);font-weight:900;color:var(--c);text-align:center;margin-bottom:12px;letter-spacing:.08em;text-shadow:0 0 20px var(--cg);white-space:pre-line;}
+.stx{font-size:.97rem;color:var(--txd);text-align:center;line-height:1.7;max-width:320px;margin-bottom:28px;}
+.stx b{color:var(--tx);} .stx em{color:var(--go);font-weight:700;font-style:normal;}
+.demo{width:100%;max-width:340px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rlg);padding:18px;margin-bottom:24px;}
+.drow{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--br);}.drow:last-child{border-bottom:none;}
+.dl{font-size:.63rem;letter-spacing:.1em;text-transform:uppercase;color:var(--txf);margin-bottom:4px;}.dv{font-weight:700;}
+.obn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;max-width:300px;padding:15px 24px;background:var(--c);color:#04040a;font-weight:700;font-size:1rem;border-radius:var(--rmd);box-shadow:0 0 24px var(--cg);border:none;cursor:pointer;transition:var(--t);}
+.obn:hover{filter:brightness(1.1);transform:translateY(-2px);}.obn.fl{background:linear-gradient(135deg,var(--fl),#ff0080);color:white;box-shadow:0 0 24px var(--flg);}
+.rl{display:flex;flex-direction:column;gap:8px;width:100%;max-width:340px;margin-bottom:24px;}
+.rr{display:flex;align-items:center;gap:14px;padding:11px 15px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);}
+.rric{font-size:1.4rem;}.rrnm{font-weight:700;font-size:.9rem;}.rrxp{font-size:.68rem;color:var(--txd);}
+.fld{width:100%;max-width:300px;margin-bottom:14px;}
+.fld input{text-align:center;font-size:1.1rem;font-weight:700;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="dots" id="dots"></div>
+<div class="sl active" id="sl0"><div class="si">⚡</div><h1 class="st" id="t0"></h1><p class="stx" id="x0"></p><button class="obn" onclick="next()" id="b0"></button></div>
+<div class="sl" id="sl1"><div class="si">🧠</div><h1 class="st" id="t1"></h1>
+  <div class="demo"><div class="drow"><div><div class="dl" id="d1a"></div><div class="dv" style="color:var(--c);font-family:var(--ac)">SOLEIL</div></div><div><div class="dl" id="d1b"></div><div class="dv" style="color:var(--go)" id="d1bv"></div></div></div><div class="drow"><div><div class="dl" id="d1c"></div><div class="dv" style="color:var(--ok)">SPORT ✓</div></div><div><div class="dl" id="d1d"></div><div class="dv" style="font-size:.78rem;color:var(--txd)" id="d1dv"></div></div></div></div>
+  <p class="stx" id="x1"></p><button class="obn" onclick="next()" id="b1"></button></div>
+<div class="sl" id="sl2"><div class="si">⚡</div><h1 class="st" id="t2"></h1><p class="stx" id="x2"></p><button class="obn fl" onclick="next()" id="b2"></button></div>
+<div class="sl" id="sl3"><div class="si">🏆</div><h1 class="st" id="t3"></h1>
+  <div class="rl">
+    <div class="rr"><span class="rric">🪖</span><div><div class="rrnm" style="color:#aaa" id="r0"></div><div class="rrxp">0 XP</div></div></div>
+    <div class="rr"><span class="rric">🔵</span><div><div class="rrnm" style="color:var(--c)" id="r1"></div><div class="rrxp">100 XP</div></div></div>
+    <div class="rr"><span class="rric">💜</span><div><div class="rrnm" style="color:var(--pu)" id="r2"></div><div class="rrxp">300 XP</div></div></div>
+    <div class="rr"><span class="rric">⭐</span><div><div class="rrnm" style="color:var(--go)" id="r3"></div><div class="rrxp">700 XP</div></div></div>
+    <div class="rr"><span class="rric">🔥</span><div><div class="rrnm" style="color:var(--fl)" id="r4"></div><div class="rrxp">1500 XP</div></div></div>
+  </div>
+  <button class="obn" onclick="next()" id="b3"></button></div>
+<div class="sl" id="sl4"><div class="si">🪖</div><h1 class="st" id="t4"></h1><p class="stx" id="x4"></p>
+  <div class="fld"><label class="f-label" for="ps" id="lbl4"></label><input type="text" id="ps" class="f-input" maxlength="20" autocomplete="off" spellcheck="false"></div>
+  <button class="obn" onclick="finish()" id="b4"></button></div>
+<script>
+Audio.init();Audio.playOnboarding();
+const TOTAL=5;let cur=0;
+const dotsEl=document.getElementById('dots');
+for(let i=0;i<TOTAL;i++){const d=document.createElement('div');d.className='dot'+(i===0?' active':'');dotsEl.appendChild(d);}
+function render(){
+  document.getElementById('t0').textContent=t('ob0_title');
+  document.getElementById('x0').innerHTML=t('ob0_text');
+  document.getElementById('b0').textContent=t('ob0_btn');
+  document.getElementById('t1').textContent=t('ob1_title');
+  document.getElementById('d1a').textContent=t('ob1_word');
+  document.getElementById('d1b').textContent=t('ob1_rule');
+  document.getElementById('d1bv').textContent=t('ob1_ex_rule');
+  document.getElementById('d1c').textContent=t('ob1_ans');
+  document.getElementById('d1d').textContent=t('ob1_why');
+  document.getElementById('d1dv').textContent=t('ob1_why');
+  document.getElementById('x1').innerHTML=t('ob1_text');
+  document.getElementById('b1').textContent=t('ob1_btn');
+  document.getElementById('t2').textContent=t('ob2_title');
+  document.getElementById('x2').innerHTML=t('ob2_text');
+  document.getElementById('b2').textContent=t('ob2_btn');
+  document.getElementById('t3').textContent=t('ob3_title');
+  document.getElementById('b3').textContent=t('ob3_btn');
+  ['recrue','agent','expert','elite','legende'].forEach((id,i)=>document.getElementById('r'+i).textContent=t('rank_'+id));
+  document.getElementById('t4').textContent=t('ob4_title');
+  document.getElementById('x4').innerHTML=t('ob4_text');
+  document.getElementById('lbl4').textContent=t('ob4_title');
+  document.getElementById('ps').placeholder=t('ob4_ph');
+  document.getElementById('b4').textContent=t('ob4_btn');
+}
+render();
+function updDots(){dotsEl.querySelectorAll('.dot').forEach((d,i)=>{d.className='dot'+(i===cur?' active':i<cur?' done':'');}); }
+function next(){SFX.navigate();const c=document.getElementById('sl'+cur);c.classList.add('exit');setTimeout(()=>{c.classList.remove('active','exit');cur++;if(cur<TOTAL){document.getElementById('sl'+cur).classList.add('active');updDots();if(cur===2)narrate('flash');if(cur===3)SFX.levelup();}},380);}
+function finish(){
+  const ps=document.getElementById('ps').value.trim();
+  if(!ps){showToast(t('ob4_err'),'warn');document.getElementById('ps').focus();return;}
+  SFX.win();narrate('welcome');
+  const p=loadProfile();p.pseudo=ps;p.firstTime=false;p.createdAt=new Date().toISOString();saveProfile(p);
+  fbSetScore(ps,0,'recrue');
+  document.getElementById('sl4').style.cssText='opacity:0;transform:scale(1.05);transition:all .5s;';
+  const rc=sessionStorage.getItem('fb_room_prefill');
+  setTimeout(()=>{
+    if(rc){sessionStorage.removeItem('fb_room_prefill');window.location.href='lobby.html?room='+encodeURIComponent(rc)+'&join=1';}
+    else window.location.href='menu.html';
+  },600);
+}
+document.getElementById('ps').addEventListener('keydown',e=>{if(e.key==='Enter')finish();});
+setTimeout(()=>narrate('welcome'),800);
+</script></body></html>

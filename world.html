@@ -1,0 +1,160 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:80px;}
+.wp{display:flex;flex-direction:column;align-items:center;padding:0 20px 40px;gap:18px;width:100%;}
+.wh{width:100%;padding:24px 0 8px;text-align:center;}
+.wt{font-family:var(--ac);font-size:1.6rem;font-weight:900;color:var(--c);text-shadow:0 0 20px var(--cg);}
+.wsub{font-size:.8rem;color:var(--txd);margin-top:4px;}
+.myr{width:100%;max-width:420px;padding:16px 20px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rlg);display:flex;align-items:center;gap:16px;}
+.mrp{font-family:var(--ac);font-size:2rem;font-weight:900;color:var(--c);min-width:50px;text-align:center;}
+.mrl{font-size:.66rem;color:var(--txd);text-transform:uppercase;letter-spacing:.08em;}.mrn{font-weight:700;font-size:1rem;}.mrx{font-size:.76rem;color:var(--pu);font-weight:600;}
+.tpanel{display:none;width:100%;max-width:420px;flex-direction:column;gap:12px;}.tpanel.active{display:flex;}
+.lbrow{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);}.lbrow.me{border-color:var(--c);background:var(--cd);}
+.lbp{font-family:var(--ac);font-size:.95rem;font-weight:700;width:28px;text-align:center;color:var(--txd);}
+.lbav{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;flex-shrink:0;background:var(--cd);border:1px solid var(--c);color:var(--c);}
+.lbi{flex:1;min-width:0;}.lbn{font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.lbr{font-size:.66rem;color:var(--txd);}
+.lbx{font-family:var(--ac);font-size:.83rem;font-weight:700;color:var(--go);white-space:nowrap;}
+.rc{display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);}
+.rl{display:flex;align-items:center;gap:5px;font-size:.64rem;font-weight:700;}
+.rl.live{color:var(--er);}.rl.open{color:var(--ok);}
+.ld{width:6px;height:6px;border-radius:50%;background:currentColor;animation:bl 1.2s infinite;}@keyframes bl{0%,100%{opacity:1}50%{opacity:.3}}
+.rcc{font-family:var(--ac);font-size:.9rem;font-weight:700;}.rcp{font-size:.7rem;color:var(--txd);}
+.jb{padding:8px 14px;background:var(--c);color:#04040a;font-weight:700;font-size:.76rem;border-radius:var(--rsm);border:none;cursor:pointer;transition:var(--t);}.jb:hover{filter:brightness(1.1);}.jb:disabled{opacity:.4;cursor:not-allowed;}
+.ldg{padding:16px;text-align:center;font-size:.82rem;color:var(--txd);}
+.ctaBtn{width:100%;padding:13px;background:linear-gradient(135deg,var(--pu),var(--c));color:#04040a;font-weight:700;border:none;border-radius:var(--rmd);cursor:pointer;}
+.frow{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);}
+.frow .lbn{flex:1;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in"><div class="page-inner"><div class="wp">
+  <div class="wh" style="position:relative"><div class="wt" id="wt"></div><div class="wsub" id="wsub"></div><span data-bell style="position:absolute;top:18px;right:0"></span></div>
+  <div class="myr" id="myr"></div>
+  <div class="seg" style="flex-wrap:wrap">
+    <button class="active" onclick="swTab('lb',this)" id="tlb"></button>
+    <button onclick="swTab('rooms',this)" id="trm"></button>
+    <button onclick="swTab('fr',this)" id="tfr"></button>
+    <button onclick="swTab('comp',this)" id="tcomp"></button>
+  </div>
+  <div class="tpanel active" id="tp-lb"><div class="ldg" id="lbload"></div><div id="lblist"></div></div>
+  <div class="tpanel" id="tp-rooms">
+    <div id="roomslist"><div class="ldg" id="rmload"></div></div>
+    <button class="ctaBtn" onclick="goCreate()" id="ctaCreate"></button>
+  </div>
+  <div class="tpanel" id="tp-fr">
+    <div class="erow" style="display:flex;gap:8px;width:100%"><input type="text" id="frpseudo" class="f-input" style="flex:1" maxlength="18" autocomplete="off"><button class="jb" style="padding:0 16px" onclick="addReal()" id="frAddBtn"></button></div>
+    <div id="frReq"></div>
+    <div id="frlist"></div>
+  </div>
+  <div class="tpanel" id="tp-comp"><div class="ldg" id="compNote"></div><div id="complist" style="display:flex;flex-direction:column;gap:10px;width:100%"></div></div>
+</div></div></div>
+<nav class="nav-bar">
+  <a class="nav-item" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item active" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+window.addEventListener('load',async()=>{
+  Audio.init();Audio.playMenu();
+  const profile=loadProfile(),r=getRank(profile.xp);
+  document.getElementById('wt').textContent=t('world_title');
+  document.getElementById('wsub').textContent=t('world_sub');
+  document.getElementById('tlb').textContent=t('world_tab_lb');
+  document.getElementById('trm').textContent=t('world_tab_rooms');
+  document.getElementById('tfr').textContent=t('world_tab_friends');
+  document.getElementById('tcomp').textContent=t('world_tab_comp');
+  document.getElementById('frpseudo').placeholder=t('fr_add_ph');
+  document.getElementById('frAddBtn').textContent=t('fr_add');
+  document.getElementById('compNote').textContent=t('comp_note');
+  document.getElementById('lbload').textContent=t('world_loading');
+  document.getElementById('ctaCreate').textContent=t('world_create_cta');
+  setActiveNav('world');
+  await loadLB(profile,r);loadRooms();loadFr();loadComp();
+  // ouverture directe d'un onglet via ?tab=
+  const tab=new URLSearchParams(location.search).get('tab');
+  if(tab==='friends'){const b=document.getElementById('tfr');if(b)b.click();}
+  else if(tab==='comp'){const b=document.getElementById('tcomp');if(b)b.click();}
+});
+async function loadLB(profile,r){
+  let data=await fbGetLB(25);const myName=profile.pseudo||'Agent';
+  if(!data)data=[];
+  if(!data.find(p=>p.pseudo===myName))data.push({pseudo:myName,xp:profile.xp,rank:r.id,isMe:true});
+  else data.find(p=>p.pseudo===myName).isMe=true;
+  data.sort((a,b)=>b.xp-a.xp);
+  const myPos=data.findIndex(p=>p.isMe)+1;
+  document.getElementById('myr').innerHTML='<div class="mrp">#'+myPos+'</div><div style="flex:1"><div class="mrl">'+t('world_my_rank')+'</div><div class="mrn">'+myName+'</div><div class="mrx">'+r.icon+' '+t('rank_'+r.id)+' · '+profile.xp+' XP</div></div><span class="rank-badge '+r.css+'">'+r.icon+'</span>';
+  document.getElementById('lbload').style.display='none';
+  document.getElementById('lblist').innerHTML=data.slice(0,20).map((p,i)=>{
+    const rk=RANKS.find(x=>x.id===p.rank)||RANKS[0];
+    return'<div class="lbrow '+(p.isMe?'me':'')+'"><div class="lbp">'+(i===0?'👑':i===1?'🥈':i===2?'🥉':i+1)+'</div><div class="lbav">'+(p.pseudo||'?')[0].toUpperCase()+'</div><div class="lbi"><div class="lbn">'+(p.pseudo||'?')+(p.isMe?' ('+t('res_you')+')':'')+'</div><div class="lbr">'+rk.icon+' '+t('rank_'+rk.id)+'</div></div><div class="lbx">'+p.xp+' XP</div></div>';
+  }).join('');
+}
+async function loadRooms(){
+  const el=document.getElementById('roomslist');
+  if(!fbConfigured()){el.innerHTML='<div class="ldg">'+t('world_offline')+'</div>';return;}
+  const rooms=await fbGetActiveRooms();
+  if(rooms&&rooms.length){
+    el.innerHTML=rooms.map(r=>{
+      const playing=r.status==='playing';const full=r.count>=r.max;
+      const badge=playing?'<div class="rl live"><div class="ld"></div>'+t('world_live')+'</div>':'<div class="rl open"><div class="ld"></div>'+t('world_open')+'</div>';
+      const jbtn='<button class="jb" '+(full&&!playing?'disabled':'')+' onclick="joinRoom(\''+r.code+'\')">'+(full&&!playing?t('world_full'):t('world_join'))+'</button>';
+      return '<div class="rc"><div style="flex:1">'+badge+'<div class="rcc">#'+r.code+'</div><div class="rcp">'+t('world_host')+' '+r.host+' · '+t('world_players_n',{N:r.count})+'/'+r.max+'</div></div>'+jbtn+'</div>';
+    }).join('');
+  }else{el.innerHTML='<div class="ldg">'+t('world_rooms_none')+'</div>';}
+}
+function loadFr(){
+  const el=document.getElementById('frlist'),reqEl=document.getElementById('frReq');
+  if(typeof Social==='undefined'||!Social.ok()){el.innerHTML='<div class="ldg">'+t('fr_need_fb')+'</div>';reqEl.innerHTML='';return;}
+  // demandes recues
+  Social.requestsOnce().then(reqs=>{
+    reqEl.innerHTML=reqs.length?('<div class="lbn" style="margin:6px 0;color:var(--txd);font-size:.7rem;text-transform:uppercase">'+t('fr_requests')+'</div>'+reqs.map(rq=>
+      '<div class="fdrow"><div class="fdav">👤</div><div class="fdi"><div class="fdn">'+rq.pseudo+'</div></div><button class="miniyes" onclick="accFr(\''+rq.uid+'\',\''+rq.pseudo.replace(/[\\\x27]/g,"")+'\')">'+t('not_accept')+'</button><button class="minino" onclick="decFr(\''+rq.uid+'\')">'+t('not_decline')+'</button></div>'
+    ).join('')):'';
+  });
+  // amis (live)
+  Social.listenFriends(list=>{
+    if(!list.length){el.innerHTML='<div class="ldg">'+t('fr_none')+'</div>';return;}
+    el.innerHTML=list.map(f=>{
+      const online=f.lastSeen&&(Date.now()-f.lastSeen<120000);
+      const rk=RANKS.find(x=>x.id===f.rank)||RANKS[0];
+      const av=f.avatar?renderAvatar(f.avatar,38):'👤';
+      return '<div class="fdrow"><div class="fdav">'+av+'</div><div class="fdi"><div class="fdn"><span class="online-dot '+(online?'on':'')+'"></span>'+f.pseudo+'</div><div class="fds">'+rk.icon+' '+t('rank_'+rk.id)+(f.xp!=null?' · '+f.xp+' XP':'')+'</div></div>'+
+        '<button class="fdbtn" title="chat" onclick="goTo(\'dm.html?u='+f.uid+'\')">💬</button>'+
+        '<button class="fdbtn" style="color:var(--er)" onclick="rmFr(\''+f.uid+'\')">✕</button></div>';
+    }).join('');
+  });
+}
+async function addReal(){
+  const v=document.getElementById('frpseudo').value.trim();if(!v)return;
+  if(typeof Social==='undefined'||!Social.ok()){showToast(t('fr_need_fb'),'warn');return;}
+  const res=await Social.sendRequest(v);
+  if(res.ok){SFX.join();showToast(t('fr_sent',{N:res.pseudo}),'success');document.getElementById('frpseudo').value='';}
+  else{const m={notfound:'fr_notfound',self:'fr_self',already:'fr_already'}[res.err]||'fr_notfound';showToast(t(m),'warn');}
+}
+async function accFr(uid,pseudo){await Social.accept(uid,pseudo);SFX.win();showToast('✅','success');loadFr();}
+async function decFr(uid){await Social.decline(uid);SFX.select();loadFr();}
+async function rmFr(uid){if(confirm(t('fr_remove'))){await Social.removeFriend(uid);SFX.select();loadFr();}}
+function loadComp(){
+  const el=document.getElementById('complist');const p=loadProfile();
+  el.innerHTML=COMPETITIONS.map(c=>{
+    const st=compStatus(c);const joined=(p.competitionsJoined||[]).includes(c.id);
+    const tag=st==='live'?'<span class="comptag live">'+t('comp_live')+'</span>':st==='ended'?'<span class="comptag end">'+t('comp_end')+'</span>':'<span class="comptag up">'+t('comp_up')+'</span>';
+    const dt=new Date(c.date).toLocaleDateString(getLang()==='en'?'en-GB':'fr-FR',{year:'numeric',month:'short',day:'numeric'});
+    const btn=st==='ended'?'':('<button class="compjoin" '+(joined?'disabled':'')+' onclick="joinComp(\''+c.id+'\')">'+(joined?t('comp_joined'):t('comp_join'))+'</button>');
+    return '<div class="comprow"><div class="compe">'+c.emoji+'</div><div class="compi"><div class="compn">'+c.name+'</div><div class="compd">'+dt+' · '+c.tier+' · '+t('comp_reward',{R:c.reward})+'</div>'+tag+'</div>'+btn+'</div>';
+  }).join('');
+}
+function joinComp(id){
+  const p=loadProfile();p.competitionsJoined=p.competitionsJoined||[];
+  if(!p.competitionsJoined.includes(id)){p.competitionsJoined.push(id);saveProfile(p);
+    const c=COMPETITIONS.find(x=>x.id===id);addNotif('comp',{name:c.name});SFX.win();showToast(t('comp_reg_ok'),'success');loadComp();}
+}
+function swTab(id,btn){document.querySelectorAll('.seg button').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tpanel').forEach(p=>p.classList.remove('active'));btn.classList.add('active');document.getElementById('tp-'+id).classList.add('active');SFX.select();if(id==='rooms')loadRooms();if(id==='fr')loadFr();if(id==='comp')loadComp();}
+function joinRoom(code){SFX.navigate();Audio.stopMusic();window.location.href='lobby.html?room='+code+'&join=1';}
+function goCreate(){SFX.navigate();window.location.href='setup.html?mode=online';}
+</script></body></html>

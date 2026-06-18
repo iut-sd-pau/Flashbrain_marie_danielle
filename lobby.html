@@ -1,0 +1,152 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>body{padding-bottom:30px;}</style>
+</head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div></div>
+<div class="page fade-in">
+<div class="topbar"><button class="tback" onclick="leave()">←</button><span class="ttl" id="ttl"></span></div>
+<div class="page-inner" style="align-items:center">
+<div class="lob">
+  <div id="errbox"></div>
+  <div class="codecard">
+    <div class="cl" id="cl"></div>
+    <div class="cv" id="cv">----</div>
+    <div class="cl" id="shl" style="margin-top:8px"></div>
+    <div class="sharebtns">
+      <button onclick="copyLink()" id="cpl"></button>
+      <button onclick="copyCode()" id="cpc"></button>
+    </div>
+  </div>
+
+  <div id="ingame" class="warn-box hidden" style="padding:13px 15px;background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.25);border-radius:14px;font-size:.84rem;color:var(--go);text-align:center;"></div>
+
+  <div>
+    <div class="s-label"><span id="pll"></span> · <span id="plc">0</span>/<span id="plmax">4</span></div>
+    <div class="plgrid" id="plgrid"></div>
+  </div>
+
+  <div class="roundsel" id="roundsel">
+    <span style="font-size:.85rem;color:var(--txd)" id="rl"></span>
+    <div class="rsbtns"><button onclick="chgRounds(-1)">−</button><span class="rsval" id="rv">5</span><button onclick="chgRounds(1)">+</button></div>
+  </div>
+
+  <div class="chatbox">
+    <div class="chatlog" id="chatlog"></div>
+    <div class="chatrow"><input id="ci" maxlength="160" autocomplete="off"><button onclick="sendC()">➤</button></div>
+  </div>
+
+  <button class="btn-p" id="startbtn" onclick="startGame()"></button>
+  <button class="btn-s" onclick="leave()" id="leavebtn"></button>
+</div></div></div>
+<script>
+const up=new URLSearchParams(location.search);
+const CODE=up.get('room'); const DOJOIN=up.get('join')==='1';
+let ROUNDS=5, joined=false, navigated=false;
+const me=()=>loadProfile().pseudo||'Agent';
+
+window.addEventListener('load',async()=>{
+  Audio.init();Audio.playMenu();
+  document.getElementById('ttl').textContent=t('lobby_title');
+  document.getElementById('cl').textContent=t('lobby_code');
+  document.getElementById('shl').textContent=t('lobby_share');
+  document.getElementById('cpl').textContent=t('lobby_copy_link');
+  document.getElementById('cpc').textContent=t('lobby_copy_code');
+  document.getElementById('pll').textContent=t('lobby_players');
+  document.getElementById('rl').textContent=t('lobby_rounds');
+  document.getElementById('leavebtn').textContent=t('lobby_leave');
+  document.getElementById('ci').placeholder=t('lobby_chat_ph');
+  document.getElementById('cv').textContent='#'+(CODE||'----');
+  document.getElementById('ci').addEventListener('keydown',e=>{if(e.key==='Enter')sendC();});
+  if(!fbConfigured()){ showErr(t('world_offline')); return; }
+  if(!CODE){ showErr(t('on_err_code')); return; }
+
+  Online.onMeta=onMeta; Online.onPlayers=onPlayers; Online.onChat=onChat;
+  const res=await Online.join(CODE, me());
+  if(!res.ok){
+    showErr(res.err==='full'?t('on_err_full'):res.err==='notfound'?t('on_err_notfound'):t('world_offline'));
+    return;
+  }
+  joined=true;
+  // si on rejoint une partie deja en cours -> on attend la prochaine
+  if(res.status==='playing'){
+    document.getElementById('ingame').classList.remove('hidden');
+    document.getElementById('ingame').textContent=t('lobby_in_game');
+  }
+});
+
+function showErr(msg){
+  document.getElementById('errbox').innerHTML='<div class="warn-box" style="padding:13px 15px;background:rgba(239,71,111,.08);border:1px solid var(--er);border-radius:14px;color:var(--er);font-size:.85rem;">'+msg+'</div>';
+  document.getElementById('startbtn').style.display='none';
+  document.getElementById('roundsel').style.display='none';
+}
+
+function onMeta(meta){
+  if(!meta){ if(joined&&!navigated){showToast(t('lobby_closed'),'warn');setTimeout(()=>window.location.href='menu.html',1200);} return; }
+  document.getElementById('plmax').textContent=meta.maxPlayers||4;
+  // statut -> demarrage
+  if(meta.status==='playing' && !navigated){
+    // si je rejoins en cours, je reste en attente jusqu'au retour 'lobby'
+    if(!document.getElementById('ingame').classList.contains('hidden')) return;
+    navigated=true;
+    sessionStorage.setItem('fb_online',JSON.stringify({code:CODE,rounds:ROUNDS}));
+    Audio.stopMusic();window.location.href='game.html?online=1';
+  }
+  if(meta.status==='lobby'){ document.getElementById('ingame').classList.add('hidden'); }
+  renderStart(meta);
+}
+
+function onPlayers(players){
+  const entries=Object.entries(players).filter(([u,p])=>p&&p.online!==false)
+    .sort((a,b)=>(a[1].joinedAt||0)-(b[1].joinedAt||0));
+  document.getElementById('plc').textContent=entries.length;
+  const grid=document.getElementById('plgrid');
+  grid.innerHTML=entries.map(([u,p])=>{
+    const isMe=u===Online.uid;
+    return '<div class="plcard'+(isMe?' me':'')+'"><div class="plav">'+(p.name||'?')[0].toUpperCase()+'</div>'+
+      '<div class="pln">'+(p.name||'?')+(isMe?' '+t('lobby_you'):'')+'</div>'+
+      (p.isHost?'<span class="pltag">'+t('lobby_host')+'</span>':'')+'</div>';
+  }).join('');
+  const max=Online.meta?.maxPlayers||4;
+  for(let i=entries.length;i<max;i++) grid.innerHTML+='<div class="plempty">'+t('lobby_waiting')+'</div>';
+  renderStart(Online.meta);
+}
+
+function renderStart(meta){
+  const btn=document.getElementById('startbtn');const rs=document.getElementById('roundsel');
+  const amHost=meta&&meta.hostUid===Online.uid;
+  rs.style.display=amHost?'flex':'none';
+  if(amHost){ btn.style.display='';btn.textContent=t('lobby_start'); }
+  else { btn.style.display='none'; }
+}
+
+let chatRendered='';
+function onChat(msgs){
+  const arr=Object.values(msgs).sort((a,b)=>a.ts-b.ts);
+  const html=arr.map(m=>'<div class="chatmsg'+(m.name===me()?' me':'')+'"><b>'+esc(m.name)+'</b> : '+esc(m.msg)+'</div>').join('');
+  const log=document.getElementById('chatlog');
+  if(html!==chatRendered){ chatRendered=html;log.innerHTML=html;log.scrollTop=log.scrollHeight; if(arr.length)SFX.chat(); }
+}
+function esc(s){return (s||'').replace(/[<>&]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));}
+function sendC(){const i=document.getElementById('ci');const v=i.value.trim();if(!v)return;Online.sendChat(v);i.value='';}
+
+function chgRounds(d){ROUNDS=Math.max(3,Math.min(10,ROUNDS+d));document.getElementById('rv').textContent=ROUNDS;SFX.tick();}
+
+function startGame(){
+  const meta=Online.meta;
+  if(!meta||meta.hostUid!==Online.uid){showToast(t('lobby_only_host'),'warn');return;}
+  const n=Object.values(Online.players||{}).filter(p=>p&&p.online!==false).length;
+  if(n<2){showToast(t('lobby_start_need'),'warn');return;}
+  sessionStorage.setItem('fb_online',JSON.stringify({code:CODE,rounds:ROUNDS}));
+  // on passe juste le statut a 'playing' ; tout le monde (dont l'hote) ira sur game.html
+  Online.ref('meta/status').set('playing');
+  SFX.go();
+}
+
+async function leave(){ navigated=true; await Online.leave(); Audio.stopMusic(); window.location.href='menu.html'; }
+
+function copyLink(){const url=location.origin+location.pathname.replace('lobby.html','index.html')+'?room='+CODE;navigator.clipboard?.writeText(url).then(()=>showToast(t('lobby_copied_link'),'success')).catch(()=>showToast(url,'info',5000));SFX.copy();}
+function copyCode(){navigator.clipboard?.writeText(CODE).then(()=>showToast(t('lobby_copied_code'),'success')).catch(()=>showToast(CODE,'info',4000));SFX.copy();}
+</script></body></html>

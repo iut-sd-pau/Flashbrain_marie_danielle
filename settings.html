@@ -1,0 +1,118 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:80px;}
+.sp{display:flex;flex-direction:column;align-items:center;padding:0 20px 40px;gap:8px;width:100%;}
+.sh{width:100%;padding:24px 0 16px;text-align:center;}
+.st{font-family:var(--ac);font-size:1.4rem;font-weight:900;color:var(--c);}
+.ssec{width:100%;max-width:400px;margin-top:16px;}
+.ssl{font-size:.68rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txd);margin-bottom:10px;}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);margin-bottom:8px;}
+.srl{font-weight:600;font-size:.92rem;}.srd{font-size:.72rem;color:var(--txd);margin-top:2px;}
+.vs{width:100%;max-width:400px;padding:0 18px;margin-bottom:12px;}
+.vr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+.vl{font-size:.75rem;color:var(--txd);font-weight:600;}.vv{font-size:.75rem;color:var(--c);font-family:var(--ac);}
+input[type=range]{width:100%;height:5px;border-radius:3px;background:var(--br);-webkit-appearance:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--cg);}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border:none;border-radius:50%;background:var(--c);box-shadow:0 0 8px var(--cg);}
+.lg{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;max-width:400px;}
+.lb{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);cursor:pointer;color:var(--txd);transition:var(--t);}
+.lb:hover{border-color:var(--brh);color:var(--tx);}.lb.active{border-color:var(--c);background:var(--cd);color:var(--c);}
+.lfl{font-size:1.5rem;}.lnm{font-weight:700;font-size:.9rem;}
+.styg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:400px;}
+.styb{padding:11px 6px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rsm);color:var(--txd);font-size:.78rem;font-weight:600;cursor:pointer;transition:var(--t);}
+.styb:hover{border-color:var(--brh);color:var(--tx);}.styb.active{border-color:var(--c);background:var(--cd);color:var(--c);}
+.tg{display:flex;flex-wrap:wrap;gap:8px;width:100%;max-width:400px;}
+.tb2{padding:10px 16px;font-size:.82rem;background:var(--bc);border:1px solid var(--br);border-radius:var(--rsm);color:var(--tx);cursor:pointer;transition:var(--t);}.tb2:hover{background:var(--bch);border-color:var(--brh);}
+.note{width:100%;max-width:400px;font-size:.72rem;color:var(--txf);line-height:1.5;padding:4px 2px;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in"><div class="page-inner"><div class="sp">
+  <div class="sh"><div class="st" id="setT"></div></div>
+  <div class="ssec"><div class="ssl" id="langL"></div>
+    <div class="lg">
+      <button class="lb" id="lFr" onclick="setLang2('fr')"><span class="lfl">🇫🇷</span><span class="lnm">Francais</span></button>
+      <button class="lb" id="lEn" onclick="setLang2('en')"><span class="lfl">🇬🇧</span><span class="lnm">English</span></button>
+    </div>
+  </div>
+  <div class="ssec"><div class="ssl" id="sndL"></div>
+    <div class="srow"><div style="flex:1"><div class="srl" id="sfxN"></div><div class="srd" id="sfxD"></div></div><label class="toggle"><input type="checkbox" id="tSfx" onchange="onSFX(this.checked)"><span class="tsl"></span></label></div>
+    <div class="vs"><div class="vr"><span class="vl" id="sfxVL"></span><span class="vv" id="sfxVV">72%</span></div><input type="range" id="sfxVol" min="0" max="1" step="0.05" oninput="onSVol(this.value)"></div>
+    <div class="srow"><div style="flex:1"><div class="srl" id="musN"></div><div class="srd" id="musD"></div></div><label class="toggle"><input type="checkbox" id="tMus" onchange="onMus(this.checked)"><span class="tsl"></span></label></div>
+    <div class="vs"><div class="vr"><span class="vl" id="musVL"></span><span class="vv" id="musVV">32%</span></div><input type="range" id="musVol" min="0" max="1" step="0.05" oninput="onMVol(this.value)"></div>
+    <div class="ssl" id="styL" style="margin-top:6px"></div>
+    <div class="styg" id="styg"></div>
+    <div class="note" id="musnote"></div>
+  </div>
+  <div class="ssec"><div class="ssl" id="expL"></div>
+    <div class="srow"><div style="flex:1"><div class="srl" id="narN"></div><div class="srd" id="narD"></div></div><label class="toggle"><input type="checkbox" id="tNar" onchange="onNar(this.checked)"><span class="tsl"></span></label></div>
+    <div class="srow"><div style="flex:1"><div class="srl" id="vibN"></div><div class="srd" id="vibD"></div></div><label class="toggle"><input type="checkbox" id="tVib" onchange="onVib(this.checked)"><span class="tsl"></span></label></div>
+  </div>
+  <div class="ssec"><div class="ssl" id="tstL"></div>
+    <div class="tg">
+      <button class="tb2" onclick="Audio.init();SFX.correct()">✅</button>
+      <button class="tb2" onclick="Audio.init();SFX.wrong()">❌</button>
+      <button class="tb2" onclick="Audio.init();SFX.flash()">⚡</button>
+      <button class="tb2" onclick="Audio.init();SFX.levelup()">🎉</button>
+      <button class="tb2" onclick="Audio.init();SFX.win()">🏆</button>
+      <button class="tb2" onclick="Audio.init();SFX.coin()">🪙</button>
+    </div>
+  </div>
+</div></div></div>
+<nav class="nav-bar">
+  <a class="nav-item" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item active" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+const STYLES=[['auto','set_style_auto'],['synthwave','set_style_synthwave'],['lofi','set_style_lofi'],['arcade','set_style_arcade'],['epic','set_style_epic'],['trap','set_style_trap']];
+window.addEventListener('load',()=>{
+  Audio.init();
+  const p=loadPrefs();renderTexts();
+  document.getElementById('lFr').classList.toggle('active',p.lang!=='en');
+  document.getElementById('lEn').classList.toggle('active',p.lang==='en');
+  document.getElementById('tSfx').checked=p.sfxEnabled!==false;
+  document.getElementById('tMus').checked=p.musicEnabled!==false;
+  document.getElementById('tNar').checked=p.narratorEnabled!==false;
+  document.getElementById('tVib').checked=p.vibrateEnabled!==false;
+  const mv=p.musicVol??0.32,sv=p.sfxVol??0.72;
+  document.getElementById('musVol').value=mv;document.getElementById('sfxVol').value=sv;
+  document.getElementById('musVV').textContent=Math.round(mv*100)+'%';
+  document.getElementById('sfxVV').textContent=Math.round(sv*100)+'%';
+  renderStyles(p.musicStyle||'auto');
+  setActiveNav('settings');
+});
+function renderStyles(cur){
+  document.getElementById('styg').innerHTML=STYLES.map(([k,key])=>'<button class="styb '+(k===cur?'active':'')+'" onclick="setStyle2(\''+k+'\')">'+t(key)+'</button>').join('');
+}
+function renderTexts(){
+  document.getElementById('setT').textContent=t('set_title');
+  document.getElementById('langL').textContent=t('set_lang_lbl');
+  document.getElementById('sndL').textContent=t('set_sound_lbl');
+  document.getElementById('sfxN').textContent=t('set_sfx_name');document.getElementById('sfxD').textContent=t('set_sfx_desc');
+  document.getElementById('sfxVL').textContent=t('set_sfx_vol');
+  document.getElementById('musN').textContent=t('set_music_name');document.getElementById('musD').textContent=t('set_music_desc');
+  document.getElementById('musVL').textContent=t('set_music_vol');
+  document.getElementById('styL').textContent=t('set_music_style');
+  document.getElementById('expL').textContent=t('set_exp_lbl');
+  document.getElementById('narN').textContent=t('set_narrator');document.getElementById('narD').textContent=t('set_narrator_d');
+  document.getElementById('vibN').textContent=t('set_vibrate');document.getElementById('vibD').textContent=t('set_vibrate_d');
+  document.getElementById('tstL').textContent=t('set_test_lbl');
+  document.getElementById('musnote').textContent=getLang()==='en'
+    ?"Music is generated live in original styles. Real TikTok/artist tracks can't be embedded (copyright)."
+    :"Les musiques sont generees en direct dans des styles originaux. Les vraies pistes TikTok/artistes ne peuvent pas etre integrees (droits d'auteur).";
+}
+function setLang2(lang){const p=loadPrefs();p.lang=lang;savePrefs(p);document.getElementById('lFr').classList.toggle('active',lang==='fr');document.getElementById('lEn').classList.toggle('active',lang==='en');document.documentElement.lang=lang;renderTexts();renderStyles(p.musicStyle||'auto');applyI18n();showToast(lang==='fr'?'Langue : Francais 🇫🇷':'Language: English 🇬🇧','success');SFX.select();}
+function setStyle2(s){const p=loadPrefs();p.musicStyle=s;savePrefs(p);Audio.setStyle(s);renderStyles(s);SFX.select();Audio.stopMusic();Audio.playGame();}
+function onSFX(v){Audio.setSFX(v);const p=loadPrefs();p.sfxEnabled=v;savePrefs(p);if(v)SFX.select();}
+function onMus(v){Audio.setMusic(v);const p=loadPrefs();p.musicEnabled=v;savePrefs(p);if(v)Audio.playMenu();}
+function onSVol(v){Audio.setSVol(parseFloat(v));document.getElementById('sfxVV').textContent=Math.round(v*100)+'%';const p=loadPrefs();p.sfxVol=parseFloat(v);savePrefs(p);SFX.select();}
+function onMVol(v){Audio.setMVol(parseFloat(v));document.getElementById('musVV').textContent=Math.round(v*100)+'%';const p=loadPrefs();p.musicVol=parseFloat(v);savePrefs(p);}
+function onNar(v){_nar=v;const p=loadPrefs();p.narratorEnabled=v;savePrefs(p);if(v)setTimeout(()=>narrate('welcome'),200);}
+function onVib(v){_vib=v;const p=loadPrefs();p.vibrateEnabled=v;savePrefs(p);if(v)vibrate([50,30,80]);}
+</script></body></html>

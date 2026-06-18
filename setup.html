@@ -1,0 +1,163 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:80px;}
+.sbody{width:100%;max-width:440px;display:flex;flex-direction:column;gap:18px;padding:22px 20px;margin:0 auto;}
+.panel{display:none;flex-direction:column;gap:16px;}.panel.active{display:flex;}
+.dg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.db{display:flex;flex-direction:column;align-items:center;gap:5px;padding:13px 8px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);cursor:pointer;color:var(--txd);transition:var(--t);}
+.db:hover{border-color:var(--brh);color:var(--tx);}.db.active{border-color:var(--go);background:rgba(255,209,102,.08);color:var(--go);box-shadow:0 0 12px rgba(255,209,102,.15);}
+.dbic{font-size:1.5rem;}.dbn{font-weight:700;font-size:.85rem;}.dbh{font-size:.64rem;color:var(--txf);}.db.active .dbh{color:rgba(255,209,102,.6);}
+.xpp{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);font-size:.82rem;}
+.xpv{font-weight:700;color:var(--pu);font-family:var(--ac);font-size:.9rem;}
+.cr{display:flex;align-items:center;justify-content:space-between;}.cc{display:flex;align-items:center;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);overflow:hidden;}
+.cb{width:44px;height:44px;background:transparent;color:var(--tx);font-size:1.3rem;display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;transition:var(--t);}.cb:hover{background:var(--cd);color:var(--c);}
+.cv{padding:0 20px;font-size:1.1rem;font-weight:700;color:var(--c);min-width:50px;text-align:center;}
+.plist{display:flex;flex-direction:column;gap:10px;max-height:30vh;overflow-y:auto;}
+.dbox{padding:17px;background:linear-gradient(135deg,rgba(168,85,247,.1),rgba(0,229,255,.06));border:1px solid rgba(168,85,247,.3);border-radius:var(--rlg);display:flex;flex-direction:column;gap:8px;}
+.dbt{font-weight:700;color:var(--pu);font-size:.93rem;}.dbd{font-size:.78rem;color:var(--txd);line-height:1.5;}.dbr{padding:8px 14px;background:rgba(168,85,247,.08);border-radius:var(--rsm);font-size:.83rem;color:var(--pu);font-weight:600;}
+.lw{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:6px;}
+.warn-box{padding:13px 15px;background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.25);border-radius:var(--rmd);font-size:.8rem;color:var(--go);line-height:1.5;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in">
+<div class="topbar"><button class="tback" onclick="back()">←</button><span class="ttl" id="sht"></span></div>
+<div class="page-inner" style="align-items:center"><div class="sbody">
+  <!-- SOLO -->
+  <div class="panel" id="p-solo">
+    <div><div class="f-label" id="difflbl" style="margin-bottom:12px"></div>
+    <div class="dg">
+      <button class="db" data-d="easy" onclick="selD(this,'easy')"><span class="dbic">🌱</span><span class="dbn" id="dn0"></span><span class="dbh">10s</span></button>
+      <button class="db active" data-d="normal" onclick="selD(this,'normal')"><span class="dbic">⚡</span><span class="dbn" id="dn1"></span><span class="dbh">5s</span></button>
+      <button class="db" data-d="hard" onclick="selD(this,'hard')"><span class="dbic">💀</span><span class="dbn" id="dn2"></span><span class="dbh">3s</span></button>
+    </div></div>
+    <div class="xpp"><span id="xpplbl"></span><span class="xpv" id="xppv">+15 XP</span></div>
+  </div>
+  <!-- LOCAL -->
+  <div class="panel" id="p-local">
+    <div class="cr"><label class="f-label" style="margin:0" id="cntlbl"></label>
+    <div class="cc"><button class="cb" onclick="chg(-1)">−</button><span class="cv" id="cv">2</span><button class="cb" onclick="chg(1)">+</button></div></div>
+    <div class="plist" id="plist"></div>
+  </div>
+  <!-- ONLINE -->
+  <div class="panel" id="p-online">
+    <div class="seg"><button class="active" id="t-create" onclick="swOn('create')"></button><button id="t-join" onclick="swOn('join')"></button></div>
+    <div class="warn-box hidden" id="cfgwarn"></div>
+    <div><label class="f-label" id="pslbl"></label><input type="text" id="op" class="f-input" maxlength="18" autocomplete="off"></div>
+    <!-- create -->
+    <div id="oc-create">
+      <div class="cr" style="margin-bottom:16px"><label class="f-label" style="margin:0" id="maxlbl"></label>
+        <div class="cc"><button class="cb" onclick="chgMax(-1)">−</button><span class="cv" id="maxv">4</span><button class="cb" onclick="chgMax(1)">+</button></div></div>
+      <div><div class="f-label" id="difflbl2" style="margin-bottom:12px"></div>
+        <div class="dg">
+          <button class="db" data-od="easy" onclick="selOD(this,'easy')"><span class="dbic">🌱</span><span class="dbn" id="odn0"></span><span class="dbh">9s</span></button>
+          <button class="db active" data-od="normal" onclick="selOD(this,'normal')"><span class="dbic">⚡</span><span class="dbn" id="odn1"></span><span class="dbh">7s</span></button>
+          <button class="db" data-od="hard" onclick="selOD(this,'hard')"><span class="dbic">💀</span><span class="dbn" id="odn2"></span><span class="dbh">5s</span></button>
+        </div></div>
+    </div>
+    <!-- join -->
+    <div id="oc-join" class="hidden">
+      <label class="f-label" id="joinlbl"></label>
+      <input type="text" id="jc" class="f-input" maxlength="6" inputmode="numeric" autocomplete="off">
+    </div>
+  </div>
+  <!-- DAILY -->
+  <div class="panel" id="p-daily">
+    <div class="dbox"><div class="dbt" id="dbt"></div><div class="dbd" id="dbd"></div><div class="dbr" id="dbr"></div></div>
+  </div>
+  <div class="lw"><button class="btn-p" onclick="launch()" id="lbtn"></button></div>
+</div></div></div>
+<nav class="nav-bar">
+  <a class="nav-item active" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+const DXP={easy:10,normal:15,hard:25,daily:30};
+const up=new URLSearchParams(location.search);
+let MODE=up.get('mode')||sessionStorage.getItem('fb_mode')||'solo',DIFF='normal',PC=2,ODIFF='normal',MAXP=4,ONTAB='create';
+function back(){ if(MODE==='online'){window.location.href='menu.html';} else history.back(); }
+window.addEventListener('load',()=>{
+  Audio.init();
+  const profile=loadProfile();
+  const titles={solo:t('menu_solo_name'),local:t('menu_local_name'),online:t('menu_online_name'),daily:t('setup_daily_t')};
+  document.getElementById('sht').textContent=titles[MODE]||t('menu_online_name');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-'+MODE)?.classList.add('active');
+  // labels
+  document.getElementById('difflbl').textContent=t('setup_diff');
+  document.getElementById('difflbl2').textContent=t('setup_diff');
+  document.getElementById('dn0').textContent=t('setup_easy');document.getElementById('dn1').textContent=t('setup_normal');document.getElementById('dn2').textContent=t('setup_hard');
+  document.getElementById('odn0').textContent=t('setup_easy');document.getElementById('odn1').textContent=t('setup_normal');document.getElementById('odn2').textContent=t('setup_hard');
+  document.getElementById('xpplbl').textContent=t('setup_xp_lbl');
+  document.getElementById('cntlbl').textContent=t('setup_count');
+  document.getElementById('maxlbl').textContent=t('on_maxp');
+  document.getElementById('pslbl').textContent=t('setup_pseudo');
+  document.getElementById('t-create').textContent=t('on_tab_create');
+  document.getElementById('t-join').textContent=t('on_tab_join');
+  document.getElementById('joinlbl').textContent=t('on_join_lbl');
+  document.getElementById('jc').placeholder=t('on_join_ph');
+  document.getElementById('dbt').textContent=t('setup_daily_t');
+  document.getElementById('dbd').textContent=t('setup_daily_d');
+  document.getElementById('lbtn').textContent=MODE==='online'?(ONTAB==='create'?t('on_create_btn'):t('on_join_btn')):t('setup_launch');
+  // daily rule
+  const DR_FR=['Sans la lettre E','Sans la lettre A','6 lettres ou plus','Commence par une voyelle','Lettre double obligatoire','8 lettres ou plus','Sans la lettre S','Exactement 5 lettres','Sans la lettre R','Se termine par E'];
+  const DR_EN=['No letter E','No letter A','6 letters or more','Starts with a vowel','Must contain a double letter','8 letters or more','No letter S','Exactly 5 letters','No letter R','Ends with E'];
+  const dayIdx=Math.floor(Date.now()/86400000)%10;const dr=(getLang()==='en'?DR_EN:DR_FR)[dayIdx];
+  document.getElementById('dbr').textContent=(getLang()==='en'?'Rule: ':'Regle : ')+dr;
+  if(MODE==='daily')sessionStorage.setItem('fb_daily_rule',dr);
+  if(MODE==='online'){
+    document.getElementById('op').value=profile.pseudo||'';
+    if(!fbConfigured()){const w=document.getElementById('cfgwarn');w.classList.remove('hidden');w.textContent=t('on_not_configured');}
+    const pf=sessionStorage.getItem('fb_room_prefill');
+    if(pf){swOn('join');document.getElementById('jc').value=pf;sessionStorage.removeItem('fb_room_prefill');}
+  }
+  if(MODE==='local')genPlayers();
+  updXP();setActiveNav('menu');
+});
+function selD(b,d){DIFF=d;document.querySelectorAll('[data-d]').forEach(x=>x.classList.toggle('active',x.dataset.d===d));updXP();SFX.tick();}
+function selOD(b,d){ODIFF=d;document.querySelectorAll('[data-od]').forEach(x=>x.classList.toggle('active',x.dataset.od===d));SFX.tick();}
+function updXP(){const el=document.getElementById('xppv');if(el)el.textContent='+'+(DXP[MODE==='daily'?'daily':DIFF]||15)+' XP';}
+function chg(d){PC=Math.max(2,Math.min(10,PC+d));document.getElementById('cv').textContent=PC;genPlayers();SFX.tick();}
+function chgMax(d){MAXP=Math.max(2,Math.min(8,MAXP+d));document.getElementById('maxv').textContent=MAXP;SFX.tick();}
+function genPlayers(){
+  const c=document.getElementById('plist');if(!c)return;
+  const ex=Array.from(c.querySelectorAll('.pi')).map(i=>i.value);c.innerHTML='';
+  for(let i=1;i<=PC;i++){const inp=document.createElement('input');inp.type='text';inp.className='f-input pi';inp.placeholder=t('setup_player')+' '+i;inp.maxLength=18;inp.autocomplete='off';inp.value=ex[i-1]||'';c.appendChild(inp);}
+}
+function swOn(tab){ONTAB=tab;document.getElementById('t-create').classList.toggle('active',tab==='create');document.getElementById('t-join').classList.toggle('active',tab==='join');
+  document.getElementById('oc-create').classList.toggle('hidden',tab!=='create');document.getElementById('oc-join').classList.toggle('hidden',tab!=='join');
+  document.getElementById('lbtn').textContent=tab==='create'?t('on_create_btn'):t('on_join_btn');SFX.select();}
+async function launch(){
+  const profile=loadProfile();
+  if(MODE==='solo'||MODE==='daily'){
+    sessionStorage.setItem('fb_config',JSON.stringify({mode:MODE,diff:DIFF,players:[profile.pseudo||'Agent']}));
+    SFX.navigate();window.location.href='game.html';return;
+  }
+  if(MODE==='local'){
+    const players=[];document.querySelectorAll('.pi').forEach((inp,i)=>players.push(inp.value.trim()||t('setup_player')+' '+(i+1)));
+    sessionStorage.setItem('fb_config',JSON.stringify({mode:'local',diff:DIFF,players}));
+    SFX.navigate();window.location.href='game.html';return;
+  }
+  // ONLINE
+  if(!fbConfigured()){showToast(t('on_not_configured'),'warn',5000);return;}
+  const name=(document.getElementById('op').value||'').trim();
+  if(!name){showToast(t('on_err_pseudo'),'warn');return;}
+  const p=loadProfile();p.pseudo=name;saveProfile(p);
+  if(ONTAB==='create'){
+    const code=Online.genCode();
+    const ok=await Online.createRoomDoc(code,name,MAXP,getLang(),ODIFF);
+    if(!ok){showToast(t('world_offline'),'warn',4000);return;}
+    SFX.flash();window.location.href='lobby.html?room='+code;
+  } else {
+    const code=(document.getElementById('jc').value||'').trim();
+    if(!/^\d{4,6}$/.test(code)){showToast(t('on_err_code'),'warn');return;}
+    SFX.navigate();window.location.href='lobby.html?room='+code+'&join=1';
+  }
+}
+</script></body></html>

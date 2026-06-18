@@ -1,0 +1,121 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:80px;}
+.rp{display:flex;flex-direction:column;align-items:center;padding:26px 20px 40px;gap:18px;width:100%;}
+.tr{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;}
+.ti{font-size:5rem;animation:tin .7s cubic-bezier(.34,1.56,.64,1);}
+@keyframes tin{from{transform:translateY(-50px) scale(.3);opacity:0}to{transform:none;opacity:1}}
+.tt{font-family:var(--ac);font-size:1.5rem;font-weight:900;color:var(--c);}
+.tp{font-size:1rem;font-weight:600;color:var(--go);}
+.fsc{display:flex;align-items:baseline;gap:8px;}
+.fsn{font-family:var(--ac);font-size:4rem;font-weight:900;color:var(--go);text-shadow:0 0 30px var(--gog);}
+.fsl{font-size:1rem;color:var(--txd);}
+.xpb{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:360px;padding:18px 20px;background:linear-gradient(135deg,rgba(168,85,247,.12),rgba(0,229,255,.07));border:1px solid rgba(168,85,247,.3);border-radius:var(--rlg);}
+.xbl{font-size:.7rem;color:var(--txd);text-transform:uppercase;letter-spacing:.1em;}
+.xbn{font-family:var(--ac);font-size:2rem;font-weight:900;color:var(--pu);}
+.xbb{width:100%;height:6px;background:var(--br);border-radius:3px;overflow:hidden;}
+.xbf{height:100%;background:var(--pu);border-radius:3px;width:0%;transition:width 1.2s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px var(--pu);}
+.xbx{font-size:.7rem;color:var(--txd);}
+.rup{display:flex;align-items:center;gap:14px;width:100%;max-width:360px;padding:16px 20px;background:linear-gradient(135deg,rgba(255,75,0,.15),rgba(255,0,128,.1));border:1px solid var(--fl);border-radius:var(--rlg);animation:rua .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes rua{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.rul{font-size:.7rem;color:var(--fl);text-transform:uppercase;letter-spacing:.1em;}
+.run{font-family:var(--ac);font-size:1.1rem;font-weight:900;color:var(--fl);}
+.sc{width:100%;max-width:360px;}
+.sr{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--br);font-size:.88rem;}.sr:last-child{border-bottom:none;}
+.lbc{width:100%;max-width:360px;}
+.lbt{font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txd);padding:12px 16px 6px;}
+.lbr{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--br);font-size:.88rem;}.lbr:last-child{border-bottom:none;}.lbr.me{background:var(--cd);}
+.lbp{font-family:var(--ac);font-size:.95rem;font-weight:700;width:26px;text-align:center;color:var(--txd);}
+.lbav{width:28px;height:28px;border-radius:50%;background:var(--pud);border:1px solid var(--pu);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--pu);flex-shrink:0;}
+.lbr.me .lbav{background:var(--cd);border-color:var(--c);color:var(--c);}
+.lbn{flex:1;font-weight:600;}.lbs{font-family:var(--ac);font-size:.88rem;font-weight:700;color:var(--go);}
+.rac{display:flex;flex-direction:column;align-items:center;gap:10px;width:100%;max-width:360px;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in"><div class="page-inner"><div class="rp" id="rp"></div></div></div>
+<nav class="nav-bar">
+  <a class="nav-item" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+window.addEventListener('load',()=>{
+  const res=JSON.parse(sessionStorage.getItem('fb_results')||'{}');
+  const profile=loadProfile();
+  if(!res.mode){window.location.href='menu.html';return;}
+  const MODE=res.mode,winner=res.winner||res.players?.[0]||'Agent';
+  const scores=res.scores||{};
+  const myName=profile.pseudo||'Agent';
+  const myScore=MODE==='online'?(scores[myName]??res.correct??0):(scores[winner]||0);
+  const maxPts=MODE==='online'?myScore:(scores[winner]||0);
+  const win=MODE==='online'?!!res.iWon:(maxPts>=3);
+  const trophy=MODE==='online'?(win?'🏆':'🎖️'):(maxPts>=4?'🏆':maxPts>=2?'🥈':maxPts===0?'💀':'🎖️');
+  const titles=[t('res_t0'),t('res_t1'),t('res_t2'),t('res_t3'),t('res_t4'),t('res_t5')];
+  const title=MODE==='online'?(win?t('res_t4'):t('res_t2')):(titles[Math.min(maxPts,5)]||titles[0]);
+  const oldXP=profile.xp-(res.xpEarned||0),newXP=profile.xp;
+  const oldRank=getRank(oldXP),newRank=getRank(newXP),rankUp=oldRank.id!==newRank.id;
+  let html='';
+  html+='<div class="tr"><div class="ti">'+trophy+'</div><div class="tt">'+title+'</div>';
+  html+=(res.players?.length>1||MODE==='online')?'<div class="tp">'+t('res_winner')+' '+winner+'</div>':'<div class="tp">'+winner+'</div>';
+  html+='</div><div class="fsc"><span class="fsn">'+myScore+'</span><span class="fsl">'+t('res_pts')+'</span></div>';
+  if(rankUp)html+='<div class="rup"><div style="font-size:2.5rem">'+newRank.icon+'</div><div><div class="rul">'+t('res_rank_new')+'</div><div class="run">'+t('rank_'+newRank.id)+'</div></div></div>';
+  if((res.xpEarned||0)>0){
+    const next=getNextRank(newXP);
+    html+='<div class="xpb"><div class="xbl">'+t('res_xp_lbl')+'</div><div class="xbn">+'+res.xpEarned+' XP</div><div class="xbb"><div class="xbf" id="xbf"></div></div><div class="xbx">'+(next?newXP+'/'+next.minXP+' XP → '+next.icon+' '+t('rank_'+next.id):newXP+' XP — '+t('res_rank_max'))+'</div></div>';
+  }
+  html+='<div class="card sc">';
+  html+='<div class="sr"><span style="color:var(--txd)">'+t('res_correct')+'</span><span style="font-weight:700;color:var(--ok)">'+(res.correct||0)+'</span></div>';
+  if(MODE!=='online')html+='<div class="sr"><span style="color:var(--txd)">'+t('res_missed')+'</span><span style="font-weight:700;color:var(--er)">'+(res.missed||0)+'</span></div>';
+  html+='<div class="sr"><span style="color:var(--txd)">'+t('res_streak')+'</span><span style="font-weight:700;color:var(--fl)">'+(res.bestStreak||0)+' 🔥</span></div>';
+  if((res.coinsWon||0)>0)html+='<div class="sr"><span style="color:var(--txd)">'+t('res_coins_won')+'</span><span style="font-weight:700;color:var(--go)">+'+res.coinsWon+' 🪙</span></div>';
+  html+='<div class="sr"><span style="color:var(--txd)">'+t('res_xp_total')+'</span><span style="font-weight:700;color:var(--pu)">'+newXP+' XP</span></div></div>';
+  const allP=[...((res.players?.length>1)?res.players.map(p=>({name:p,score:scores[p]||0,isMe:p===myName})):[]),
+              ...((MODE==='online')?[{name:myName,score:myScore,isMe:true}]:[]),
+              ...(res.onlinePlayers||[]).map(p=>({name:p.name,score:p.score||0}))].sort((a,b)=>b.score-a.score);
+  if(allP.length>1){
+    html+='<div class="card lbc"><div class="lbt">'+(MODE==='online'?t('res_lb_online'):t('res_lb_local'))+'</div>';
+    allP.forEach((p,i)=>{html+='<div class="lbr '+(p.isMe?'me':'')+'"><div class="lbp">'+(i===0?'👑':i===1?'🥈':i===2?'🥉':i+1)+'</div><div class="lbav">'+p.name[0].toUpperCase()+'</div><div class="lbn">'+p.name+(p.isMe?' '+t('res_you'):'')+'</div><div class="lbs">'+p.score+' '+t('res_pts')+'</div></div>';});
+    html+='</div>';
+  }
+  // Inviter ses adversaires (mode en ligne)
+  if(MODE==='online'){
+    const others=allP.filter(p=>!p.isMe&&p.name&&p.name!==myName).map(p=>p.name);
+    const uniq=[...new Set(others)];
+    if(uniq.length){
+      const canFb=(typeof Social!=='undefined'&&Social.ok());
+      html+='<div class="card lbc"><div class="lbt">'+t('res_invite_ttl')+(canFb?'':' '+t('res_invite_need_fb'))+'</div>';
+      uniq.forEach(nm=>{const safe=nm.replace(/[\\\x27"]/g,'');
+        html+='<div class="lbr"><div class="lbav">'+nm[0].toUpperCase()+'</div><div class="lbn">'+nm+'</div>'+(canFb?'<button class="jb" onclick="inviteCo(this,\''+safe+'\')">'+t('res_invite_btn')+'</button>':'')+'</div>';});
+      html+='</div>';
+    }
+  }
+  html+='<div class="rac">';
+  if(MODE==='online'&&res.roomCode){
+    html+='<button class="btn-p" onclick="goTo(\'lobby.html?room='+res.roomCode+'&join=1\')">'+t('res_lobby')+'</button>';
+    html+='<button class="btn-s" onclick="goTo(\'menu.html\')">'+t('res_home')+'</button>';
+  } else if(MODE==='daily'){
+    html+='<button class="btn-p" onclick="goTo(\'menu.html\')">'+t('res_home')+'</button>';
+  } else {
+    html+='<button class="btn-p" onclick="goTo(\'setup.html\')">'+t('res_replay')+'</button>';
+    html+='<button class="btn-s" onclick="goTo(\'menu.html\')">'+t('res_home')+'</button>';
+  }
+  html+='</div>';
+  document.getElementById('rp').innerHTML=html;
+  setTimeout(()=>{const f=document.getElementById('xbf');if(f)f.style.width=getXPPct(newXP)+'%';},400);
+  if(win){SFX.win();narrate('win');}else{SFX.lose();narrate('lose');}
+  if(rankUp)setTimeout(()=>{SFX.levelup();narrate('levelup');},1200);
+});
+async function inviteCo(btn,pseudo){
+  if(typeof Social==='undefined'||!Social.ok())return;
+  btn.disabled=true;
+  const res=await Social.sendRequest(pseudo);
+  if(res.ok){SFX.join();btn.textContent='✓';showToast(t('res_invite_sent'),'success');}
+  else{const m={notfound:'fr_notfound',self:'fr_self',already:'fr_already'}[res.err]||'fr_notfound';showToast(t(m),'warn');btn.disabled=false;}
+}
+</script></body></html>

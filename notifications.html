@@ -1,0 +1,68 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:90px;}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 16px 30px;width:100%;}
+.lbl{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txd);align-self:flex-start;width:100%;max-width:440px;margin-top:6px;}
+.tools{display:flex;gap:8px;width:100%;max-width:440px;}
+.tools button{flex:1;padding:9px;background:var(--bc);border:1px solid var(--br);border-radius:var(--rmd);color:var(--txd);font-size:.78rem;font-weight:600;cursor:pointer;}
+.tools button:hover{border-color:var(--c);color:var(--c);}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in"><div class="page-inner">
+  <div class="headrow"><button class="tback" onclick="history.length>1?history.back():goTo('menu.html')">←</button><div class="ttl" id="ttl"></div><span style="width:38px"></span></div>
+  <div class="wrap">
+    <div class="tools"><button id="bRead" onclick="doRead()"></button><button id="bClear" onclick="doClear()"></button></div>
+    <div id="reqArea" style="width:100%;max-width:440px;display:flex;flex-direction:column;gap:8px"></div>
+    <div id="trArea" style="width:100%;max-width:440px;display:flex;flex-direction:column;gap:8px"></div>
+    <div class="lbl" id="histlbl"></div>
+    <div class="notlist" id="list"></div>
+  </div>
+</div></div>
+<nav class="nav-bar">
+  <a class="nav-item" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item active" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+window.addEventListener('load',async()=>{
+  Audio.init();Audio.playMenu();
+  document.getElementById('ttl').textContent=t('not_title');
+  document.getElementById('bRead').textContent=t('not_markread');
+  document.getElementById('bClear').textContent=t('not_clear');
+  document.getElementById('histlbl').textContent=t('not_title');
+  await renderActions();renderList();setActiveNav('world');
+  setTimeout(()=>{markAllRead();},1200);
+});
+function ago(ts){const d=Math.floor((Date.now()-ts)/60000);if(d<1)return 'now';if(d<60)return d+'m';const h=Math.floor(d/60);if(h<24)return h+'h';return Math.floor(h/24)+'j';}
+async function renderActions(){
+  const reqEl=document.getElementById('reqArea'),trEl=document.getElementById('trArea');
+  if(typeof Social==='undefined'||!Social.ok()){reqEl.innerHTML='';trEl.innerHTML='';return;}
+  const reqs=await Social.requestsOnce();
+  reqEl.innerHTML=reqs.length?('<div class="lbl">'+t('fr_requests')+'</div>'+reqs.map(r=>
+    '<div class="notrow unread"><span>👤 <b>'+r.pseudo+'</b></span><div class="notact"><button class="miniyes" onclick="acc(\''+r.uid+'\',\''+r.pseudo.replace(/\x27/g,"")+'\')">'+t('not_accept')+'</button><button class="minino" onclick="dec(\''+r.uid+'\')">'+t('not_decline')+'</button></div></div>'
+  ).join('')):'';
+  const trs=(await Social.tradesOnce()).filter(x=>x.status==='pending');
+  trEl.innerHTML=trs.length?('<div class="lbl">'+t('col_trade_incoming')+'</div>'+trs.map(tr=>
+    '<div class="notrow unread"><span>🔄 <b>'+tr.fromPseudo+'</b></span><div class="notact"><button class="miniyes" onclick="goTo(\'collection.html\')">'+t('not_view')+'</button></div></div>'
+  ).join('')):'';
+}
+async function acc(uid,pseudo){const ok=await Social.accept(uid,pseudo);if(ok){SFX.win();showToast('✅','success');renderActions();}}
+async function dec(uid){await Social.decline(uid);SFX.select();renderActions();}
+function renderList(){
+  const n=getNotifs();const el=document.getElementById('list');
+  if(!n.length){el.innerHTML='<div class="psi" style="color:var(--txd);padding:14px;text-align:center">'+t('not_none')+'</div>';return;}
+  el.innerHTML=n.map(x=>{
+    let act='';
+    if(x.type==='dm'&&x.data.uid)act='<button class="miniyes" onclick="goTo(\'dm.html?u='+x.data.uid+'\')">'+t('not_reply')+'</button>';
+    return '<div class="notrow '+(x.read?'':'unread')+'"><span>'+notifText(x)+'</span>'+(act?'<div class="notact">'+act+'</div>':'<span class="nt">'+ago(x.ts)+'</span>')+'</div>';
+  }).join('');
+}
+function doRead(){markAllRead();renderList();SFX.select();}
+function doClear(){clearNotifs();renderList();SFX.select();}
+</script></body></html>

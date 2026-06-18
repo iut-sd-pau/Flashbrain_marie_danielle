@@ -1,0 +1,35 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN ⚡</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;}
+.ld{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;}
+.lb{font-size:5rem;animation:b 1.2s ease-in-out infinite alternate;filter:drop-shadow(0 0 24px var(--c));}
+@keyframes b{from{transform:scale(.85) rotate(-8deg);opacity:.6}to{transform:scale(1.12) rotate(8deg);opacity:1}}
+.lt{font-family:var(--ac);font-size:clamp(2rem,8vw,3.2rem);font-weight:900;letter-spacing:.15em;color:var(--c);text-shadow:0 0 40px var(--cg);}
+.ls{font-size:.82rem;color:var(--txd);letter-spacing:.1em;}
+.lbar{width:220px;height:4px;background:var(--br);border-radius:2px;overflow:hidden;}
+.lfill{height:100%;width:0%;background:var(--c);box-shadow:0 0 8px var(--c);border-radius:2px;animation:lf 2.4s cubic-bezier(.4,0,.2,1) forwards;}
+@keyframes lf{0%{width:0%}60%{width:75%}100%{width:100%}}
+.lstat{font-size:.7rem;color:var(--txf);letter-spacing:.06em;height:1em;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="ld">
+  <div class="lb">⚡</div>
+  <div class="lt">FLASH BRAIN</div>
+  <div class="ls">Agents Mentaux — Saison 1</div>
+  <div class="lbar"><div class="lfill"></div></div>
+  <div class="lstat" id="st"></div>
+</div>
+<script>
+const MS=['load1','load2','load3','load4','load5'];let si=0;
+const iv=setInterval(()=>{if(si<MS.length)document.getElementById('st').textContent=t(MS[si++]);else clearInterval(iv);},460);
+const up=new URLSearchParams(window.location.search);const rc=up.get('room');
+setTimeout(()=>{
+  const p=loadProfile();
+  if(p.firstTime||!p.pseudo){ if(rc)sessionStorage.setItem('fb_room_prefill',rc); window.location.href='onboarding.html'; return; }
+  if(rc){ window.location.href='lobby.html?room='+encodeURIComponent(rc)+'&join=1'; return; }
+  window.location.href='menu.html';
+},2600);
+</script></body></html>

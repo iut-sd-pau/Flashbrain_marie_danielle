@@ -1,0 +1,91 @@
+<!DOCTYPE html><html><head><title>FLASH BRAIN</title><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+<link rel="stylesheet" href="core.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="i18n.js"></script><script src="engine.js"></script><script src="audio.js"></script><script src="boost.js"></script>
+<style>
+body{padding-bottom:90px;}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 16px 30px;width:100%;}
+.lbl{font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txd);align-self:flex-start;width:100%;max-width:440px;margin-top:8px;}
+.bal{display:flex;gap:8px;}
+</style></head><body>
+<div class="ambient"><div class="ambient-orb orb-1"></div><div class="ambient-orb orb-2"></div><div class="ambient-orb orb-3"></div></div>
+<div class="page fade-in"><div class="page-inner">
+  <div class="headrow">
+    <button class="tback" onclick="goTo('menu.html')">←</button>
+    <div class="bal"><span class="coin-chip"><span id="coinv">0</span> 🪙</span><span class="gem-chip"><span id="gemv">0</span> 💎</span></div>
+    <span data-bell></span>
+  </div>
+  <div class="wrap">
+    <div style="text-align:center"><div class="ttl" id="ttl"></div><div class="psi" style="color:var(--txd);font-size:.76rem" id="sub"></div></div>
+    <button class="btn-s" style="max-width:440px" onclick="goTo('avatar.html')" id="avcta"></button>
+    <div class="lbl" id="l-packs"></div><div class="shopgrid" id="g-packs"></div>
+    <div class="lbl" id="l-boost"></div><div class="shopgrid" id="g-boost"></div>
+    <div class="lbl" id="l-gems"></div><div class="shopgrid" id="g-gems"></div>
+  </div>
+</div></div>
+<div class="modal-overlay hidden" id="packModal"><div class="modal-box" style="max-width:380px">
+  <div class="modal-title" id="packTtl"></div>
+  <div class="packfan" id="packFan"></div>
+  <button class="btn-p" onclick="closePack()" id="packClose"></button>
+</div></div>
+<nav class="nav-bar">
+  <a class="nav-item" data-nav="menu" href="menu.html"><span class="ni">🏠</span><span data-i18n="nav_home"></span></a>
+  <a class="nav-item" data-nav="world" href="world.html"><span class="ni">🌍</span><span data-i18n="nav_world"></span></a>
+  <a class="nav-item active" data-nav="arcade" href="arcade.html"><span class="ni">🕹️</span><span data-i18n="nav_arcade"></span></a>
+  <a class="nav-item" data-nav="profile" href="profile.html"><span class="ni">👤</span><span data-i18n="nav_profile"></span></a>
+  <a class="nav-item" data-nav="settings" href="settings.html"><span class="ni">⚙️</span><span data-i18n="nav_settings"></span></a>
+</nav>
+<script>
+window.addEventListener('load',()=>{
+  Audio.init();Audio.playArcade();
+  document.getElementById('ttl').textContent=t('shop_title');
+  document.getElementById('sub').textContent=t('shop_sub');
+  document.getElementById('avcta').textContent=t('shop_avatar_cta');
+  document.getElementById('l-packs').textContent=t('shop_packs');
+  document.getElementById('l-boost').textContent=t('shop_boost');
+  document.getElementById('l-gems').textContent=t('shop_gems');
+  document.getElementById('packClose').textContent=t('pack_keep');
+  render();setActiveNav('arcade');
+});
+function bal(){const p=loadProfile();document.getElementById('coinv').textContent=p.coins||0;document.getElementById('gemv').textContent=p.gems||0;}
+function row(it,handler){
+  const p=loadProfile();const can=it.cur==='gem'?(p.gems||0)>=it.cost:(p.coins||0)>=it.cost;
+  const cls=it.cur==='gem'?'buybtn gem':'buybtn';
+  return '<div class="shoprow"><div class="se">'+it.emoji+'</div><div class="si"><div class="sn">'+it.n+'</div>'+(it.d?'<div class="sd">'+it.d+'</div>':'')+'</div>'+
+    '<button class="'+cls+'" '+(can?'':'disabled')+' onclick="'+handler+'(\''+it.id+'\')">'+it.cost+(it.cur==='gem'?' 💎':' 🪙')+'</button></div>';
+}
+function render(){
+  bal();
+  document.getElementById('g-packs').innerHTML=SHOP_ITEMS.packs.map(it=>row(it,'buyPack')).join('');
+  document.getElementById('g-boost').innerHTML=SHOP_ITEMS.boosters.map(it=>row(it,'buyBoost')).join('');
+  document.getElementById('g-gems').innerHTML=SHOP_ITEMS.gems.map(it=>row(it,'buyGem')).join('');
+}
+function pay(it){return it.cur==='gem'?spendGems(it.cost):spendCoins(it.cost);}
+function buyPack(id){
+  const it=SHOP_ITEMS.packs.find(x=>x.id===id);if(!pay(it)){showToast(t('shop_poor'),'warn');return;}
+  SFX.coin();const drawn=openPack(it.cards,it.luck||0);showPack(drawn);render();
+}
+function buyBoost(id){
+  const it=SHOP_ITEMS.boosters.find(x=>x.id===id);if(!pay(it)){showToast(t('shop_poor'),'warn');return;}
+  const p=loadProfile();
+  if(it.give.joker){p.jokers=p.jokers||{};p.jokers[it.give.joker]=(p.jokers[it.give.joker]||0)+it.give.n;saveProfile(p);}
+  if(it.give.coins){addCoins(it.give.coins,true);}
+  SFX.coin();showToast(t('shop_bought'),'success');render();
+}
+function buyGem(id){
+  const it=SHOP_ITEMS.gems.find(x=>x.id===id);if(!pay(it)){showToast(t('shop_poor'),'warn');return;}
+  addGems(it.give.gems);SFX.coin();showToast('+'+it.give.gems+' 💎','success');render();
+}
+function showPack(drawn){
+  document.getElementById('packTtl').textContent=t('pack_keep');
+  document.getElementById('packFan').innerHTML=drawn.map((d,i)=>{
+    const c=cardById(d.id);const col=RARITY[c.rarity].c;
+    return '<div class="packcard" style="border-top-color:'+col+';background:linear-gradient(180deg,'+col+'33,var(--bc));animation-delay:'+(i*0.12)+'s">'+
+      '<div class="pe">'+c.emoji+'</div><div style="font-size:.7rem;font-weight:700">'+c.name+'</div>'+
+      '<div style="font-size:.56rem;font-weight:800;color:'+col+'">'+RARITY[c.rarity].lbl+'</div>'+(d.isNew?'<div class="newtag">'+t('pack_new')+'</div>':'')+'</div>';
+  }).join('');
+  document.getElementById('packModal').classList.remove('hidden');SFX.win();
+}
+function closePack(){document.getElementById('packModal').classList.add('hidden');SFX.select();}
+</script></body></html>
