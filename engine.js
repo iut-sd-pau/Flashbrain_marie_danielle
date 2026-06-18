@@ -13,13 +13,13 @@
    hors-ligne, mais l'Arene en ligne affichera "a configurer".
 ============================================================ */
 const FB_CFG = {
-  apiKey: "AIzaSyDDc-eOnEaF5U4pMqXJsXRSB17NyC9yNjw",
-  authDomain: "flashbrain-b2ec2.firebaseapp.com",
-  databaseURL: "https://flashbrain-b2ec2-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "flashbrain-b2ec2",
-  storageBucket: "flashbrain-b2ec2.firebasestorage.app",
-  messagingSenderId: "1061042756502",
-  appId: "1:1061042756502:web:39f87f9a1606fda21b9bb7",
+  apiKey: "AIzaSyB9MeFUSKNGMTByB8Cddd32F7R9EfxAeRk",
+  authDomain: "flashbrain-daf53.firebaseapp.com",
+  databaseURL: "https://flashbrain-daf53-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "flashbrain-daf53",
+  storageBucket: "flashbrain-daf53.firebasestorage.app",
+  messagingSenderId: "696681124773",
+  appId: "1:696681124773:web:e88a1c43474615c222ce4c",
 };
 
 let _db=null, _fbOk=false;
